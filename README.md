@@ -1,2 +1,2 @@
-# grupra
+# propra
 Grundpraktikum Programmierung
