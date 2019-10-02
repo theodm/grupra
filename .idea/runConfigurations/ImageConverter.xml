@@ -2,7 +2,7 @@
   <configuration default="false" name="ImageConverter" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="propra.imageconverter.ImageConverter" />
     <module name="grupra.main" />
-    <option name="PROGRAM_PARAMETERS" value="--input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=hallo" />
+    <option name="PROGRAM_PARAMETERS" value="--input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="propra.imageconverter.*" />

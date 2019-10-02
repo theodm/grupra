@@ -1,21 +1,44 @@
 package propra.imageconverter.image.tga;
 
 import propra.imageconverter.image.BinaryReader;
+import propra.imageconverter.image.BinaryWriter;
+import propra.imageconverter.image.Picture;
 
 import java.io.IOException;
 
 public class TgaParser {
 
-	public void parse(
+	public void write(
+			Picture picture,
+			BinaryWriter os
+	) throws IOException {
+		os.writeByte(0); // Länge der Bild-ID
+		os.writeByte(0); // Palettentyp
+		os.writeByte(2); // Bildtyp, nur unterstützt 2 = RGB(24 oder 32 Bit) unkomprimiert
+		os.writeN(new byte[] { 0, 0, 0, 0, 0 }); // Palletenbeginn, Palettenlänge und Palettengröße immer 0, da keine Palette vorhanden
+		os.writeWord(picture.getxZero()); // X-Koordinate für Nullpunkt
+		os.writeWord(picture.getyZero()); // Y-Koordinate für Nullpunkt
+		os.writeWord(picture.getWidth()); // Breite des Bilds
+		os.writeWord(picture.getHeight()); // Länge des Bilds
+		os.writeByte(24); // Bits pro Bildpunkt, nach Vorgabe immer 24
+		os.writeByte(0b00000011); // Attribut-Byte, nach Vorgabe, siehe parse()
+		os.writeN(picture.getRawData()); // Bilddaten in Little-Endian
+	}
+
+	public Picture parse(
 			BinaryReader is
 	) throws IOException {
-		// Länge der Bild-ID, bei Wert 0 entfällt die Bild-ID
+		// Länge der Bild-ID, per Aufgabenstellung 0
 		int lengthOfPictureID = is.readByte();
+
+		assert lengthOfPictureID == 0;
 
 		// Farbpalettentyp
 		// 0 = keine Farbpalette
 		// 1 = Farbpalette vorhanden
 		int paletteType = is.readByte();
+
+		assert paletteType == 0;
 
 		// Bildtyp
 		// nur unterstützt: 2 = RGB (24 oder 32 Bit) unkomprimiert
@@ -48,11 +71,18 @@ public class TgaParser {
 
 		// Nach Vorgabe besteht keine Bild-ID und Farbpalette
 
+		// Größe der Daten sind 3 Bytes pro Pixel,
+		// wobei es width * height Pixel gibt.
+		int numberOfPoints = width * height * 3;
+		byte[] pictureData = new byte[numberOfPoints];
+		is.readN(pictureData, numberOfPoints);
 
-
-
-
-
-
+		return new Picture(
+				width,
+				height,
+				xZero,
+				yZero,
+				pictureData
+		);
 	}
 }

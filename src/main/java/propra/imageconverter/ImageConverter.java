@@ -2,9 +2,12 @@ package propra.imageconverter;
 
 import propra.imageconverter.cmd.CommandLineParser;
 import propra.imageconverter.image.BinaryReader;
+import propra.imageconverter.image.BinaryWriter;
+import propra.imageconverter.image.Picture;
 import propra.imageconverter.image.tga.TgaParser;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -39,6 +42,15 @@ public class ImageConverter {
 
 		TgaParser tgaParser = new TgaParser();
 
-		tgaParser.parse(new BinaryReader(new FileInputStream(inputFilePath)));
+		Picture picture = null;
+		try (BinaryReader fs = new BinaryReader(new FileInputStream(inputFilePath))) {
+			picture = tgaParser.parse(fs);
+		}
+
+		try (BinaryWriter os = new BinaryWriter(new FileOutputStream(outputFilePath))) {
+			tgaParser.write(picture, os);
+		}
+
+
 	}
 }

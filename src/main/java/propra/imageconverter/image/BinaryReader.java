@@ -3,7 +3,7 @@ package propra.imageconverter.image;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class BinaryReader {
+public class BinaryReader implements AutoCloseable {
     private final InputStream inputStream;
 
     public BinaryReader(InputStream inputStream) {
@@ -28,4 +28,13 @@ public class BinaryReader {
         assert numberOfSkippedBytes == n;
     }
 
+    public void readN(byte[] targetArray, int n) throws IOException {
+        long numberOfReadBytes = inputStream.read(targetArray, 0, n);
+
+        assert numberOfReadBytes == n;
+    }
+
+    @Override public void close() throws IOException {
+        inputStream.close();
+    }
 }
