@@ -5,7 +5,7 @@
     <option name="PROGRAM_PARAMETERS" value="--input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="propra.imageconverter.*" />
+        <option name="PATTERN" value="propra.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

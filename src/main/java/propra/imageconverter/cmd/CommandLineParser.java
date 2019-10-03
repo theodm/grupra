@@ -1,5 +1,7 @@
 package propra.imageconverter.cmd;
 
+import propra.PropraException;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -8,7 +10,7 @@ import java.util.stream.Stream;
  * Ein ganz einfacher Parser für die Kommandozeile. Erstellt aus einem Argument-String
  * eine Map, die das Attribut auf den zugewiesen Wert mappt.
  */
-public class CommandLineParser {
+public final class CommandLineParser {
 	// Utility-Klasse
 	private CommandLineParser() {
 
@@ -27,7 +29,7 @@ public class CommandLineParser {
 
 		if (splitted.length != 2
 				|| !splitted[0].startsWith("--")) {
-			throw new RuntimeException("Das Argument '" + arg + "' ist nicht wohlgeformt. Erwartet ist ein Argument der Form '--XXX=YYY'.");
+            throw new PropraException("Das Argument '" + arg + "' ist nicht wohlgeformt. Erwartet ist ein Argument der Form '--XXX=YYY'.");
 		}
 
 		return new String[] {
