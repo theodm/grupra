@@ -1,5 +1,6 @@
 package propra.imageconverter.image.tga;
 
+import propra.PropraException;
 import propra.imageconverter.image.BinaryReader;
 import propra.imageconverter.image.BinaryWriter;
 import propra.imageconverter.image.ImageParser;
@@ -7,7 +8,14 @@ import propra.imageconverter.image.Picture;
 
 import java.io.IOException;
 
-public class TgaParser implements ImageParser {
+public final class TgaParser implements ImageParser {
+	/**
+	 * Helferfunktion, gibt eine Exception aus, falls [condition] nicht erfüllt ist.
+	 */
+	private void require(boolean condition, String message) {
+		if (!condition)
+			throw new PropraException(message);
+	}
 
 	@Override
 	public void write(

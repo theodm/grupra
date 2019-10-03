@@ -1,5 +1,6 @@
 package propra.imageconverter.image.propra;
 
+import propra.PropraException;
 import propra.imageconverter.image.BinaryReader;
 import propra.imageconverter.image.BinaryWriter;
 import propra.imageconverter.image.ImageParser;
@@ -9,17 +10,31 @@ import propra.imageconverter.util.ArrayUtils;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
-public class PropraParser implements ImageParser {
+public final class PropraParser implements ImageParser {
     private final static byte[] MAGIC_HEADER = "ProPraWS19".getBytes();
 
-    private final static Map<Long, Long> modulos = new HashMap<>();
+    /**
+     * Helferfunktion, gibt eine Exception aus, falls [condition] nicht erfüllt ist.
+     */
+    private void require(boolean condition, String message) {
+        if (!condition)
+            throw new PropraException(message);
+    }
 
+    /**
+     * Die Methode B der Prüfsummenberechnung. Siehe auch Dokumentation der Prüfsummenberechnung unter
+     * https://moodle-wrm.fernuni-hagen.de/mod/page/view.php?id=40779.
+     */
     private long B(byte[] data, long i) {
         long X = 65513;
 
+        // Hier wurde die rekursive Funktion in eine iterative Funktion
+        // umgewandelt, da sonst ein Stackoverflow auftritt.
+        //
+        // Als zweiter Schritt wird der Aufruf der Methode A integriert,
+        // um zu vermeiden, dass die Summierung für jeden Schleifendurchlauf
+        // erneut berechnet werden muss.
         long currentResult = 1;
         long lastASum = 0;
         for (long j = 1; j <= i; j++) {
@@ -30,6 +45,10 @@ public class PropraParser implements ImageParser {
         return currentResult;
     }
 
+    /**
+     * Die Methode A der Prüfsummenberechnung. Siehe auch Dokumentation der Prüfsummenberechnung unter
+     * https://moodle-wrm.fernuni-hagen.de/mod/page/view.php?id=40779.
+     */
     private long A(byte[] data, long n) {
         long X = 65513;
 
@@ -41,10 +60,24 @@ public class PropraParser implements ImageParser {
         return (sum) % X;
     }
 
+    /**
+     * Prüfsummenberechnung für das Propra-Format. Siehe auch https://moodle-wrm.fernuni-hagen.de/mod/page/view.php?id=40779.
+     *
+     * @param data (Bild)daten, deren Prüfsumme berechnet werden soll.
+     * @param n    Länge der (Bild)daten.
+     * @return gesuchte Prüfsumme der Bilddaten.
+     */
     public long generateChecksum(byte[] data, long n) {
+        // 2 << 15 == 2^16
         return A(data, n) * (2 << 15) + B(data, n);
     }
 
+    /**
+     * Die Funktion macht aus einem Array von Pixeldaten im Format BGR,
+     * ein Array von Pixeldaten im Format GBR. Diese Methode verändert das übergebene
+     * Array in-place, es muss also ggf. kopiert werden um versehentliches Überschreiben
+     * zu verhindern.
+     */
     private void inPlaceBGRToGBR(byte[] pictureData) {
         // Das Propra-Format speichert die Pixeldaten im Format GBR,
         // intern speichern wir die Pixeldaten aber in BGR,

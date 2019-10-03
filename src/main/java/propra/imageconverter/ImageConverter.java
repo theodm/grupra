@@ -1,5 +1,6 @@
 package propra.imageconverter;
 
+import propra.PropraException;
 import propra.imageconverter.cmd.CommandLineParser;
 import propra.imageconverter.image.BinaryReader;
 import propra.imageconverter.image.BinaryWriter;
@@ -17,7 +18,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ImageConverter {
+public final class ImageConverter {
+	private ImageConverter() {
+
+	}
+
+	/**
+	 * Gibt zu einem Dateinamen ohne Pfad die
+	 * Dateiendung zurück.
+	 */
 	private static String calcFileExtension(String fileName) {
 		String[] fileNameParts = fileName.split("\\.");
 
@@ -26,6 +35,10 @@ public class ImageConverter {
 		return fileNameParts[1];
 	}
 
+	/**
+	 * Gibt eine Instanz von ImageParser für die ausgewählte Datei zurück.
+	 * Der Typ der Datei wird anhand der Dateiendung bestimmt.
+	 */
 	private static ImageParser getImageParserForFileName(Path path) {
 		// Konfiguration: Welche Datei wird mit welchem Parser bearbeitet-
 		Map<String, ImageParser> fileExtensionToParserMap = Stream
@@ -38,7 +51,7 @@ public class ImageConverter {
 		String extension = calcFileExtension(path.getFileName().toString());
 
 		if (!fileExtensionToParserMap.containsKey(extension)) {
-			throw new RuntimeException("...");
+			throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
 		}
 
 		return fileExtensionToParserMap.get(extension);
@@ -49,11 +62,11 @@ public class ImageConverter {
 	 *
 	 * @param args Die Argumente für die Kommandozeile. Entsprechend der Anforderungen gibt
 	 *             es die folgenden Parameter.
-	 *             <p>
+	 *
 	 *             --input Eingabepfad für das zu konvertierende Bild im TGA-Format.
 	 *             --output Ausgabepfad für das konvertierte Bild im ProPra-Format.
-	 *             <p>
-	 *             Beispiel: TODO
+	 *
+	 *             Beispiel: --input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga
 	 */
 	public static void main(
 			String[] args
@@ -67,7 +80,7 @@ public class ImageConverter {
 
 			if (inputFilePath == null
 					|| outputFilePath == null) {
-				throw new RuntimeException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
+				throw new PropraException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
 			}
 
 			ImageParser inputParser = getImageParserForFileName(Paths.get(inputFilePath));
@@ -88,9 +101,7 @@ public class ImageConverter {
 			// und insbesondere die PropraExceptions berücksichtigt.
 			System.out.println("Die Konvertierung ist fehlgeschlagen: " + exception.getMessage());
 
-			System.exit(123);
+			//System.exit(123);
 		}
-
-		System.exit(0);
 	}
 }
