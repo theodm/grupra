@@ -66,12 +66,8 @@ public final class TgaParser implements ImageParser {
 		int width = is.readWord();
 		int height = is.readWord();
 
-		// xZero und yZero geben immer die untere linke
-		// Bildecke an, daher sind das die einzigen
-		// erlaubten Werte.
-		// Die TGA-Specs sind hier genauer: http://tfc.duke.free.fr/coding/tga_specs.pdf
-		require(xZero == 0, "Es wird nur eine X-Koordinate für den Nullpunkt nur 0 unterstützt. Angegeben wurden " + xZero + ".");
-		require(yZero == height, "Es wird nur eine Y-Koordinate für den Nullpunkt nur die Bildhöhe unterstützt." + yZero + ".");
+		// Wir ignorieren die Werte von xZero und yZero,
+		// schreiben sie aber einheitlich.
 
 		// Höhe und Breite dürfen nicht 0 sein.
 		require(width != 0, "Die Breite eines Bilds darf nicht 0 sein.");
@@ -93,7 +89,6 @@ public final class TgaParser implements ImageParser {
 		int numberOfPoints = width * height * 3;
 		byte[] pictureData = new byte[numberOfPoints];
 		is.readN(pictureData, numberOfPoints);
-
 
 		return new Picture(
 				width,
