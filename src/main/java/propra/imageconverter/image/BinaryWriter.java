@@ -83,6 +83,10 @@ public final class BinaryWriter implements AutoCloseable {
 		outputStream.write(sourceArray);
 	}
 
+	public void mark() {
+		return outputStream.
+	}
+
 	@Override public void close() throws IOException {
 		outputStream.close();
 	}

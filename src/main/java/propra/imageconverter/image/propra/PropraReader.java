@@ -3,23 +3,24 @@ package propra.imageconverter.image.propra;
 import propra.PropraException;
 import propra.imageconverter.image.BinaryReader;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.function.Consumer;
 
-public class PropraReader {
+import static propra.imageconverter.image.propra.Checksum.streamDataAndCalculateChecksum;
+
+public class PropraReader implements AutoCloseable {
 	private final static byte[] MAGIC_HEADER = "ProPraWS19".getBytes();
-	private int width;
-	private int height;
+	private final BinaryReader is;
+	private final int width;
+	private final int height;
 	// Prüfsumme um nach dem Lesen aller Daten auf
 	// Übereinstimmung zu überprüfen.
-	private long checksum;
-	private BigInteger lengthOfContent;
+	private final long checksum;
+	private final BigInteger lengthOfContent;
 
-	private PropraReader(BinaryReader is) {
+	private PropraReader(BinaryReader is) throws IOException {
+		this.is = is;
 		// Formatkennung
 		byte[] magicHeader = new byte[MAGIC_HEADER.length];
 		is.readN(magicHeader, MAGIC_HEADER.length);
@@ -61,55 +62,33 @@ public class PropraReader {
 		this.lengthOfContent = lengthOfContent;
 	}
 
-	public PropraReader(File file) throws IOException {
-		// Header-Daten einlesen
-		try (BinaryReader is = new BinaryReader(new FileInputStream(file))) {
-
-			//verifyChecksumAndLength();
-		}
-
+	public int getWidth() {
+		return width;
 	}
 
-	public static PropraReader readHeader() {
-
-		return
+	public int getHeight() {
+		return height;
 	}
 
-	public long streamDataAndCalculateChecksum(BigInteger n, BinaryReader is, Consumer<Integer> byteStream) throws IOException {
-		BigInteger X = BigInteger.valueOf(65513);
+	public void streamRGB(RGBStream stream) throws IOException {
+		PropraByteStreamToRGBStream propraByteStreamToRGBStream = new PropraByteStreamToRGBStream(stream);
 
-		// Hier wurde die rekursive Funktion in eine iterative Funktion
-		// umgewandelt, da sonst ein Stackoverflow auftritt.
-		//
-		// Als zweiter Schritt wird der Aufruf der Methode A integriert,
-		// um zu vermeiden, dass die Summierung für jeden Schleifendurchlauf
-		// erneut berechnet werden muss.
-		BigInteger bResult = BigInteger.ONE;
-		BigInteger lastASum = BigInteger.ZERO;
-		for (BigInteger j = BigInteger.ONE; j.compareTo(n) <= 0; j = j.add(BigInteger.ONE)) {
-			int byteRead = is.readByte();
-
-			// Das einzelne gelesene Byte an den Aufrufer zurückgeben.
-			byteStream.accept(byteRead);
-
-			lastASum = lastASum.add(j.add(BigInteger.valueOf(byteRead)));
-			bResult = bResult.add(lastASum.remainder(X)).remainder(X);
-		}
-
-		BigInteger aResult = lastASum.remainder(X);
-
-		// 2 << 15 == 2^16
-		return aResult.multiply(BigInteger.valueOf(2 << 15)).add(bResult).longValueExact();
-	}
-
-	public void streamRGB(RGBStream stream) {
-
-		long checksum = streamDataAndCalculateChecksum(
+		long generatedChecksum = streamDataAndCalculateChecksum(
 				lengthOfContent,
-				is,
-				currentByte -> currentByte
-		)
+				() -> {
+					try {
+						return is.readByte();
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				},
+				propraByteStreamToRGBStream::consumeByte
+		);
 
+		require(checksum == generatedChecksum, "Die Prüfsumme stimmt nicht mit den Daten überein.");
+
+		int eof = is.readByte();
+		require(eof == -1, "Es sind mehr Daten in der Datei vorhanden, als angegeben wurden.");
 	}
 
 	/**
@@ -120,27 +99,34 @@ public class PropraReader {
 			throw new PropraException(message);
 	}
 
-	static class ByteStreamToTripleStream {
-		private final ThreeByteStream stream;
+	@Override
+	public void close() throws Exception {
+		is.close();
+	}
+
+	private static class PropraByteStreamToRGBStream {
+		private final RGBStream stream;
 		private int[] currentGBR = new int[3];
 		private Integer currentIndex = 0;
 
-		public ByteStreamToTripleStream(ThreeByteStream stream) {
+		private PropraByteStreamToRGBStream(RGBStream stream) {
 			this.stream = stream;
 		}
 
 		public void consumeByte(int currentByteValue) {
 			currentGBR[currentIndex] = currentByteValue;
 			if (currentIndex == 2) {
-				stream.emit(Arrays.copyOf(currentGBR, 3));
+				// Gelesen wird GBR, daher müssen wir hier vertauschen.
+				int[] rgbPoint = new int[3];
+
+				rgbPoint[0] = currentGBR[2];
+				rgbPoint[1] = currentGBR[0];
+				rgbPoint[2] = currentGBR[1];
+
+				stream.emit(rgbPoint);
 			}
 
 			currentIndex = (currentIndex + 1) % 3;
 		}
 	}
-
-	class Metadata {
-
-	}
-
 }

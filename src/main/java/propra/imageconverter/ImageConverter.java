@@ -101,9 +101,9 @@ public final class ImageConverter {
 			// und insbesondere die PropraExceptions berücksichtigt.
 			System.out.println("Die Konvertierung ist fehlgeschlagen: " + exception.getMessage());
 
-            System.exit(123);
-        }
+			System.exit(123);
+		}
 
-        System.exit(0);
+		System.exit(0);
 	}
 }
