@@ -2,17 +2,25 @@ package propra.imageconverter.binary;
 
 import propra.PropraException;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigInteger;
+import java.nio.channels.Channels;
 
 /**
  * Die Klasse wrappt einen Eingabe- und Ausgabestream und bietet
  * einfache Methoden zum Schreiben und Lesen von Daten im Little-Endian-Format
  * an.
+ * <p>
+ * Die Klasse unterstützt den sogenannten Stream-Mode wie der BinaryReader.
  */
 public final class BinaryReadWriter extends BinaryReader implements AutoCloseable {
     private final RandomAccessFile dataInputOutput;
+    /**
+     * Aktueller BufferedOutputStream, falls sich der BinaryReadWriter im Stream-Mode befindet.
+     */
+    private BufferedOutputStream lastBufferedOutputStream = null;
 
     public BinaryReadWriter(RandomAccessFile dataInputOutput) {
         super(dataInputOutput);
@@ -30,6 +38,8 @@ public final class BinaryReadWriter extends BinaryReader implements AutoCloseabl
      * Schreibt ein vorzeichenloses Byte in den Datenstream.
      */
     public void writeUByte(int value) throws IOException {
+        throwIfInStreamMode();
+
         if (value < 0 || value >= (2 << 7))
             throwOutOfBounds();
 
@@ -40,6 +50,8 @@ public final class BinaryReadWriter extends BinaryReader implements AutoCloseabl
      * Schreibt ein vorzeichenloses Short (2 Byte) in den Datenstream.
      */
     public void writeUShort(int value) throws IOException {
+        throwIfInStreamMode();
+
         if (value < 0 || value >= (2 << 15))
             throwOutOfBounds();
 
@@ -51,6 +63,8 @@ public final class BinaryReadWriter extends BinaryReader implements AutoCloseabl
      * Schreibt ein vorzeichenloses Int (4 Byte) in den Datenstream.
      */
     public void writeUInt(long value) throws IOException {
+        throwIfInStreamMode();
+
         if (value < 0L || value > (2L << 31L))
             throwOutOfBounds();
 
@@ -64,6 +78,8 @@ public final class BinaryReadWriter extends BinaryReader implements AutoCloseabl
      * Schreibt ein vorzeichenloses Long (8 Byte) in den Datenstream.
      */
     public void writeULong(BigInteger value) throws IOException {
+        throwIfInStreamMode();
+
         if (value.compareTo(BigInteger.ZERO) < 0 || value.compareTo(BigInteger.valueOf(2).pow(64)) >= 0)
             throwOutOfBounds();
 
@@ -77,15 +93,59 @@ public final class BinaryReadWriter extends BinaryReader implements AutoCloseabl
         dataInputOutput.write(value.shiftRight(56).mod(BigInteger.valueOf(256)).intValue());
     }
 
+
+    /**
+     * Gibt einen BufferedOutputStream von der aktuellen Stelle in
+     * der Datei zurück und überführt den Reader in den Stream-Mode.
+     * <p>
+     * Der Benutzer muss den BufferedOutputStream mittels releaseOutputStream
+     * wieder freigeben.
+     * <p>
+     * Für eine Erläuterung des Stream-Mode: Siehe Klassenkommentar.
+     */
+    public BufferedOutputStream bufferedOutputStream() throws IOException {
+        throwIfInStreamMode();
+
+        // Alte Dateiposition merken
+        filePositionBeforeStreamStart = dataInputOutput.getFilePointer();
+        lastBufferedOutputStream = new BufferedOutputStream(Channels.newOutputStream(dataInputOutput.getChannel()));
+        return lastBufferedOutputStream;
+    }
+
+    /**
+     * Beendet den Stream-Mode und gibt den BufferedOutputStream wieder frei.
+     */
+    public void releaseBufferedOutputStream() throws IOException {
+        // Noch nicht gespeicherte Daten des
+        // Ausgabestreams schreiben
+        lastBufferedOutputStream.flush();
+        lastBufferedOutputStream = null;
+
+        // Alte Dateiposition wiederherstellen
+        dataInputOutput.seek(filePositionBeforeStreamStart);
+        filePositionBeforeStreamStart = -1;
+
+        // BufferedOutputStream darf nicht geschlossen werden,
+        // da sonst der zugrundeliegende FileChannel geschlossen würde.
+    }
+
     /**
      * Schreibt ein Byte-Array in den Datenstream.
      */
     public void writeN(byte[] sourceArray) throws IOException {
+        throwIfInStreamMode();
+
         dataInputOutput.write(sourceArray);
     }
 
     @Override
     public void close() throws IOException {
+        // Noch nicht gespeicherte Daten des
+        // Ausgabestreams schreiben
+        if (lastBufferedOutputStream != null) {
+            lastBufferedOutputStream.flush();
+        }
+
         dataInputOutput.close();
     }
 }

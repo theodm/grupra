@@ -4,6 +4,8 @@ import propra.imageconverter.binary.BinaryReadWriter;
 import propra.imageconverter.image.ImageWriter;
 import propra.imageconverter.util.ArrayUtils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -21,11 +23,13 @@ import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
  */
 public final class PropraWriter implements ImageWriter {
     private final BinaryReadWriter binaryOutput;
+    private final BufferedOutputStream bufferedOutputStream;
     private final BigInteger lengthOfContent;
 
-    private PropraWriter(BinaryReadWriter binaryOutput, BigInteger lengthOfContent) {
+    private PropraWriter(BinaryReadWriter binaryOutput, BigInteger lengthOfContent) throws IOException {
         this.binaryOutput = binaryOutput;
         this.lengthOfContent = lengthOfContent;
+        this.bufferedOutputStream = binaryOutput.bufferedOutputStream();
     }
 
     /**
@@ -70,11 +74,13 @@ public final class PropraWriter implements ImageWriter {
         ArrayUtils.swap(pixelForWrite, 1, 2);
         ArrayUtils.swap(pixelForWrite, 0, 2);
 
-        binaryOutput.writeN(pixelForWrite);
+        bufferedOutputStream.write(pixelForWrite);
     }
 
     @Override
     public void close() throws Exception {
+        binaryOutput.releaseBufferedOutputStream();
+
         // Alle Daten wurden geschrieben, daher müssen wir nun nochmal die
         // Prüfsumme berechnen und diese auch schreiben.
 
@@ -84,7 +90,9 @@ public final class PropraWriter implements ImageWriter {
 
         // Und dann berechnen wir die Prüfsumme der
         // geschriebenen Daten
-        long checksum = Checksum.calcStreamingChecksum(lengthOfContent, binaryOutput::readUByte);
+        BufferedInputStream bufferedInputStream = binaryOutput.bufferedInputStream();
+        long checksum = Checksum.calcStreamingChecksum(lengthOfContent, bufferedInputStream::read);
+        binaryOutput.releaseInputStream();
 
         // Wir setzenden Cursor des darunterliegenden Ausgabestreams
         // an die Position der Prüfsumme

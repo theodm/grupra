@@ -4,6 +4,7 @@ import propra.imageconverter.binary.BinaryReadWriter;
 import propra.imageconverter.image.ImageWriter;
 import propra.imageconverter.util.ArrayUtils;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -14,13 +15,15 @@ import java.util.Arrays;
  * Der Benutzer ist angehalten, die Instanz nach dem Schreiben
  * wieder zu schließen.
  */
-public class TgaWriter implements ImageWriter {
+public final class TgaWriter implements ImageWriter {
     private final BinaryReadWriter binaryOutput;
+    private final BufferedOutputStream bufferedOutputStream;
     private final BigInteger lengthOfContent;
 
-    private TgaWriter(BinaryReadWriter binaryOutput, BigInteger lengthOfContent) {
+    private TgaWriter(BinaryReadWriter binaryOutput, BigInteger lengthOfContent) throws IOException {
         this.binaryOutput = binaryOutput;
         this.lengthOfContent = lengthOfContent;
+        this.bufferedOutputStream = binaryOutput.bufferedOutputStream();
     }
 
     /**
@@ -58,7 +61,7 @@ public class TgaWriter implements ImageWriter {
 
         ArrayUtils.swap(pixelForWrite, 0, 2);
 
-        binaryOutput.writeN(pixelForWrite);
+        bufferedOutputStream.write(pixelForWrite);
     }
 
     @Override

@@ -5,6 +5,7 @@ import propra.imageconverter.binary.BinaryReader;
 import propra.imageconverter.image.ImageReader;
 import propra.imageconverter.util.ArrayUtils;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 
@@ -13,8 +14,9 @@ import java.math.BigInteger;
  * <p>
  * Der Benutzer ist angehalten die Instanz der Klasse wieder zu schließen.
  */
-public class TgaReader implements ImageReader {
+public final class TgaReader implements ImageReader {
     private final BinaryReader binaryInput;
+    private final BufferedInputStream bufferedInputStream;
     private final int width;
     private final int height;
     private final BigInteger lengthOfContent;
@@ -24,11 +26,12 @@ public class TgaReader implements ImageReader {
      */
     private BigInteger currentPosInContent = BigInteger.ZERO;
 
-    private TgaReader(BinaryReader binaryInput, int width, int height, BigInteger lengthOfContent) {
+    private TgaReader(BinaryReader binaryInput, int width, int height, BigInteger lengthOfContent) throws IOException {
         this.binaryInput = binaryInput;
         this.width = width;
         this.height = height;
         this.lengthOfContent = lengthOfContent;
+        bufferedInputStream = binaryInput.bufferedInputStream();
     }
 
     public static TgaReader create(
@@ -108,7 +111,8 @@ public class TgaReader implements ImageReader {
     public byte[] readNextPixel() throws IOException {
         byte[] nextPixel = new byte[3];
 
-        binaryInput.readFully(nextPixel);
+        int readBytes = bufferedInputStream.read(nextPixel);
+        require(readBytes == 3, "readNextPixel wurde über das Dateiende hinaus aufgerufen.");
 
         // Wir lesen im Format BGR, wollen aber
         // dem Aufrufer das Format RGB liefern.
@@ -123,9 +127,8 @@ public class TgaReader implements ImageReader {
         return currentPosInContent.compareTo(lengthOfContent) < 0;
     }
 
-
     @Override
     public void close() throws Exception {
-
+        binaryInput.close();
     }
 }

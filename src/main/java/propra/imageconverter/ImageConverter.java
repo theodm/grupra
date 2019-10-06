@@ -13,6 +13,7 @@ import propra.imageconverter.image.tga.TgaWriter;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -73,10 +74,10 @@ public final class ImageConverter {
 	 *
 	 * @param args Die Argumente für die Kommandozeile. Entsprechend der Anforderungen gibt
 	 *             es die folgenden Parameter.
-	 *
+	 *             <p>
 	 *             --input Eingabepfad für das zu konvertierende Bild im TGA-Format.
 	 *             --output Ausgabepfad für das konvertierte Bild im ProPra-Format.
-	 *
+	 *             <p>
 	 *             Beispiel: --input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga
 	 */
 	public static void main(
@@ -93,8 +94,11 @@ public final class ImageConverter {
 		// Die Dateien können also nicht mehr in einem Durchlauf geschrieben und gelesen werden. Das macht den
 		// Code gegenüber einer In-Memory-Implementierung deutlich komplexer.
 		//
-		// Die Daten werden pixelweise übertragen. Das ist ohne ein zwischengelagertes Buffering langsam. Hier
-		// könnte in einem späteren Schritt optimiert werden. (bisher aber: YAGNI)
+		// Die Daten werden pixelweise übertragen, das wäre grds. ineffizient, sollte hier aber ohne Bedeutung sein,
+		// da die Daten in einem Buffer zwischengespeichert wurde (mittels BufferedInputStream und BufferedOutputStream).
+		// Leider ist der Code, der die Komfortablität der RandomAccessFile und der Effizienz der Streams zusammenbringen
+		// soll sehr komplex geraten. Besser wäre es gewesen, eine Implementation von RandomAccessFile zu erstellen, die
+		// Buffering selbst vornimmt. Dies wurde jedoch kurzfristig zu komplex. (Siehe auch entsprechende Anmerkungen an BinaryReader und BinaryReadWriter)
 		//
 		// Auch werden die Daten redundant mehrfach gelesen und die Prüfsumme redundant mehrfach berechnet. Dies
 		// ist nicht geschwindigkeitseffizient, macht den Code aber deutlich einfacher und lesbarer. Das Programm
@@ -132,7 +136,10 @@ public final class ImageConverter {
 				// Erstellt einen ImageWriter mit den Dimensionen der
 				// Eingabedatei.
 				try (ImageWriter imageWriter = createImageWriterForFileName(Paths.get(outputFilePath), binaryReadWriter, imageReader.getWidth(), imageReader.getHeight())) {
+					BigInteger pixelsRead = BigInteger.ZERO;
+
 					while (imageReader.hasNextPixel()) {
+						pixelsRead = pixelsRead.add(BigInteger.ONE);
 						// Pixelweise werden die Bilddaten von einer Datei
 						// in die andere kopiert.
 						byte[] rgbPixel = imageReader.readNextPixel();
