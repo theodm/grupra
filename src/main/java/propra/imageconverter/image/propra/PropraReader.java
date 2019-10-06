@@ -1,49 +1,84 @@
 package propra.imageconverter.image.propra;
 
 import propra.PropraException;
-import propra.imageconverter.image.BinaryReader;
+import propra.imageconverter.binary.BinaryReader;
+import propra.imageconverter.image.ImageReader;
+import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import static propra.imageconverter.image.propra.Checksum.streamDataAndCalculateChecksum;
+import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
 
-public class PropraReader implements AutoCloseable {
-	private final static byte[] MAGIC_HEADER = "ProPraWS19".getBytes();
-	private final BinaryReader is;
+/**
+ * Der PropraReader ermöglicht das pixelweise Einlesen einer
+ * Propra-Datei.
+ * <p>
+ * Der Benutzer ist angehalten die Instanz der Klasse nach
+ * der Nutzung wieder zu schließen.
+ */
+public class PropraReader implements ImageReader {
+	private final BinaryReader binaryInput;
 	private final int width;
 	private final int height;
-	// Prüfsumme um nach dem Lesen aller Daten auf
-	// Übereinstimmung zu überprüfen.
-	private final long checksum;
 	private final BigInteger lengthOfContent;
 
-	private PropraReader(BinaryReader is) throws IOException {
-		this.is = is;
+	/**
+	 * Die aktuelle Position des Pixel-Zeigers.
+	 */
+	private BigInteger currentPosInContent = BigInteger.ZERO;
+
+	private PropraReader(
+			BinaryReader binaryInput,
+			int width,
+			int height,
+			BigInteger lengthOfContent
+	) {
+		this.binaryInput = binaryInput;
+		this.width = width;
+		this.height = height;
+		this.lengthOfContent = lengthOfContent;
+	}
+
+	/**
+	 * Helferfunktion, gibt eine Exception aus, falls [condition] nicht erfüllt ist.
+	 */
+	private static void require(boolean condition, String message) {
+		if (!condition)
+			throw new PropraException(message);
+	}
+
+	/**
+	 * Hiermit erstellen wir eine Instanz des PropraReaders. Danach können wir
+	 * die Bilddaten pixelweise ablesen.
+	 */
+	public static PropraReader create(
+			BinaryReader binaryInput
+	) throws IOException {
 		// Formatkennung
 		byte[] magicHeader = new byte[MAGIC_HEADER.length];
-		is.readN(magicHeader, MAGIC_HEADER.length);
+		binaryInput.readFully(magicHeader);
 		require(Arrays.equals(magicHeader, MAGIC_HEADER), "Der Header der Propra-Datei ist nicht wohlgeformt. Der Beginn muss " + new String(MAGIC_HEADER) + " sein.");
 
 		// Breite und Höhe
-		int width = is.readWord();
-		int height = is.readWord();
+		int width = binaryInput.readUShort();
+		int height = binaryInput.readUShort();
 
 		// Höhe und Breite dürfen nicht 0 sein.
 		require(width != 0, "Die Breite eines Bilds darf nicht 0 sein.");
 		require(height != 0, "Die Höhe eines Bilds darf nicht 0 sein.");
 
 		// Bits pro Bildpunkt
-		int bitsPerPoint = is.readByte();
+		int bitsPerPoint = binaryInput.readUByte();
 		require(bitsPerPoint == 24, "Es werden nur 24 bits pro Pixel für Propa-Dateien unterstützt. Angegeben wurden " + bitsPerPoint + " bit.");
 
 		// Kompressionstyp
-		int compressionType = is.readByte();
+		int compressionType = binaryInput.readUByte();
 		require(compressionType == 0, "Es wird für Propa-Dateien nur der Kompressionstyp 0 unterstützt. Angeben wurde der Kompressionstyp " + compressionType + ".");
 
 		// Länge der Bilddaten
-		BigInteger lengthOfContent = is.readQWord();
+		BigInteger lengthOfContent = binaryInput.readULong();
 		BigInteger lengthOfContentPerWidthAndHeight = BigInteger.ONE
 				.multiply(BigInteger.valueOf(width))
 				.multiply(BigInteger.valueOf(height))
@@ -52,14 +87,26 @@ public class PropraReader implements AutoCloseable {
 		require(lengthOfContentPerWidthAndHeight.compareTo(lengthOfContent) == 0, "Die Länge der Daten muss 3 * Bildbreite * Bildhöhe entsprchen.");
 
 		// Prüfsumme
-		long checksum = is.readDword();
+		long checksum = binaryInput.readUInt();
 
-		// Metadaten in der Instanz
-		// abspeichern.
-		this.width = width;
-		this.height = height;
-		this.checksum = checksum;
-		this.lengthOfContent = lengthOfContent;
+		// Hier lesen wir die kompletten Daten ein, um die Prüfsumme
+		// berechnen zu können. Danach (siehe unten) setzen wir den Datei-Cursor
+		// zurück, um für den Benutzer der Klasse, die Daten erneut lesbar zu machen.
+		//
+		// Das ist zwar für die Geschwindigkeit ineffizient, aber hier ist die
+		// Verständlichkeit des Codes und die Arbeitsspeichereffizienz wichtiger als die
+		// Geschwindigkeit des Codes.
+		long calculatedChecksum = Checksum.calcStreamingChecksum(lengthOfContent, binaryInput::readUByte);
+
+		require(checksum == calculatedChecksum, "Die berechnete Prüfsumme der Daten stimmt nicht mit der in der Datei gespeicherten Prüfsumme überein.");
+		require(binaryInput.isAtEndOfFile(), "Die tatsächlichen Bilddaten sind länger, als im Header angegeben.");
+
+		// Wie oben beschrieben setzen wir den File-Cursor
+		// auf das Datensegment um dem Benutzer der Klasse
+		// das Lesen der Bilddaten zu ermöglichen
+		binaryInput.seek(PropraFileFormat.OFFSET_DATA);
+
+		return new PropraReader(binaryInput, width, height, lengthOfContent);
 	}
 
 	public int getWidth() {
@@ -70,63 +117,28 @@ public class PropraReader implements AutoCloseable {
 		return height;
 	}
 
-	public void streamRGB(RGBStream stream) throws IOException {
-		PropraByteStreamToRGBStream propraByteStreamToRGBStream = new PropraByteStreamToRGBStream(stream);
+	public byte[] readNextPixel() throws IOException {
+		byte[] nextPixel = new byte[3];
 
-		long generatedChecksum = streamDataAndCalculateChecksum(
-				lengthOfContent,
-				() -> {
-					try {
-						return is.readByte();
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				},
-				propraByteStreamToRGBStream::consumeByte
-		);
+		binaryInput.readFully(nextPixel);
 
-		require(checksum == generatedChecksum, "Die Prüfsumme stimmt nicht mit den Daten überein.");
+		// Das Propra-Format speichert die Pixel im GBR-Format
+		// wir wollen unseren Benutzern aber die Daten komfortabel
+		// im RGB-Format zurückgeben.
+		ArrayUtils.swap(nextPixel, 0, 2);
+		ArrayUtils.swap(nextPixel, 1, 2);
 
-		int eof = is.readByte();
-		require(eof == -1, "Es sind mehr Daten in der Datei vorhanden, als angegeben wurden.");
+		currentPosInContent = currentPosInContent.add(BigInteger.valueOf(3));
+
+		return nextPixel;
 	}
 
-	/**
-	 * Helferfunktion, gibt eine Exception aus, falls [condition] nicht erfüllt ist.
-	 */
-	private void require(boolean condition, String message) {
-		if (!condition)
-			throw new PropraException(message);
+	public boolean hasNextPixel() {
+		return currentPosInContent.compareTo(lengthOfContent) < 0;
 	}
 
 	@Override
 	public void close() throws Exception {
-		is.close();
-	}
-
-	private static class PropraByteStreamToRGBStream {
-		private final RGBStream stream;
-		private int[] currentGBR = new int[3];
-		private Integer currentIndex = 0;
-
-		private PropraByteStreamToRGBStream(RGBStream stream) {
-			this.stream = stream;
-		}
-
-		public void consumeByte(int currentByteValue) {
-			currentGBR[currentIndex] = currentByteValue;
-			if (currentIndex == 2) {
-				// Gelesen wird GBR, daher müssen wir hier vertauschen.
-				int[] rgbPoint = new int[3];
-
-				rgbPoint[0] = currentGBR[2];
-				rgbPoint[1] = currentGBR[0];
-				rgbPoint[2] = currentGBR[1];
-
-				stream.emit(rgbPoint);
-			}
-
-			currentIndex = (currentIndex + 1) % 3;
-		}
+		binaryInput.close();
 	}
 }

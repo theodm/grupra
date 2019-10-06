@@ -25,5 +25,4 @@
     <orderEntry type="library" name="Gradle: org.opentest4j:opentest4j:1.1.1" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Gradle: org.junit.platform:junit-platform-engine:1.4.2" level="project" />
   </component>
-  <component name="TestModuleProperties" production-module="grupra.main" />
 </module>

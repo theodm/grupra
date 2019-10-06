@@ -1,6 +1,7 @@
 .idea
 .gradle
 build
+/out
 
 /output/KE1_Diesner-Mayer_Theodor.zip
 /output/KE1_Diesner-Mayer_Theodor/**

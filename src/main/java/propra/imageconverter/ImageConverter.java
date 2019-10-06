@@ -1,22 +1,21 @@
 package propra.imageconverter;
 
 import propra.PropraException;
+import propra.imageconverter.binary.BinaryReadWriter;
+import propra.imageconverter.binary.BinaryReader;
 import propra.imageconverter.cmd.CommandLineParser;
-import propra.imageconverter.image.BinaryReader;
-import propra.imageconverter.image.BinaryWriter;
-import propra.imageconverter.image.ImageParser;
-import propra.imageconverter.image.Picture;
-import propra.imageconverter.image.propra.PropraParser;
-import propra.imageconverter.image.tga.TgaParser;
+import propra.imageconverter.image.ImageReader;
+import propra.imageconverter.image.ImageWriter;
+import propra.imageconverter.image.propra.PropraReader;
+import propra.imageconverter.image.propra.PropraWriter;
+import propra.imageconverter.image.tga.TgaReader;
+import propra.imageconverter.image.tga.TgaWriter;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public final class ImageConverter {
 	private ImageConverter() {
@@ -32,29 +31,41 @@ public final class ImageConverter {
 
 		assert fileNameParts.length == 2;
 
-		return fileNameParts[1];
+		return fileNameParts[1].toLowerCase();
 	}
 
 	/**
-	 * Gibt eine Instanz von ImageParser für die ausgewählte Datei zurück.
-	 * Der Typ der Datei wird anhand der Dateiendung bestimmt.
+	 * Erstellt einen ImageReader für das Format, welches anhand der
+	 * Dateiendung des übergebenen Pfads erkannt wurde.
 	 */
-	private static ImageParser getImageParserForFileName(Path path) {
-		// Konfiguration: Welche Datei wird mit welchem Parser bearbeitet-
-		Map<String, ImageParser> fileExtensionToParserMap = Stream
-				.of(
-						new AbstractMap.SimpleEntry<>("tga", new TgaParser()),
-						new AbstractMap.SimpleEntry<>("propra", new PropraParser())
-				)
-				.collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
-
+	private static ImageReader createImageReaderForFileName(Path path, BinaryReader binaryReader) throws IOException {
 		String extension = calcFileExtension(path.getFileName().toString());
 
-		if (!fileExtensionToParserMap.containsKey(extension)) {
-			throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
+		switch (extension) {
+			case "tga":
+				return TgaReader.create(binaryReader);
+			case "propra":
+				return PropraReader.create(binaryReader);
 		}
 
-		return fileExtensionToParserMap.get(extension);
+		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
+	}
+
+	/**
+	 * Erstellt einen ImageWriter für das Format, welches anhand der
+	 * Dateiendung des übergebenen Pfads erkannt wurde.
+	 */
+	private static ImageWriter createImageWriterForFileName(Path path, BinaryReadWriter binaryReadWriter, int width, int height) throws IOException {
+		String extension = calcFileExtension(path.getFileName().toString());
+
+		switch (extension) {
+			case "tga":
+				return TgaWriter.create(binaryReadWriter, width, height);
+			case "propra":
+				return PropraWriter.create(binaryReadWriter, width, height);
+		}
+
+		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
 	}
 
 	/**
@@ -71,6 +82,25 @@ public final class ImageConverter {
 	public static void main(
 			String[] args
 	) {
+		// Anmerkungen an den oder die Korrektor/in
+		//
+		// Diese Implementierung des Bildkonvertierers hat auch das Ziel große Bilddateien
+		// zu unterstützen. Siehe dazu auch die Diskussion im Moodle-Diskussionsforum unter
+		// https://moodle-wrm.fernuni-hagen.de/mod/forum/discuss.php?d=23707.
+		//
+		// Die Bilddaten werden deshalb niemals im Arbeitsspeicher gehalten und innerhalb der
+		// Lese- und Schreibroutinen ist es notwendig, innerhalb der Datei den Lesecursor vor- und zurückzubewegen.
+		// Die Dateien können also nicht mehr in einem Durchlauf geschrieben und gelesen werden. Das macht den
+		// Code gegenüber einer In-Memory-Implementierung deutlich komplexer.
+		//
+		// Die Daten werden pixelweise übertragen. Das ist ohne ein zwischengelagertes Buffering langsam. Hier
+		// könnte in einem späteren Schritt optimiert werden. (bisher aber: YAGNI)
+		//
+		// Auch werden die Daten redundant mehrfach gelesen und die Prüfsumme redundant mehrfach berechnet. Dies
+		// ist nicht geschwindigkeitseffizient, macht den Code aber deutlich einfacher und lesbarer. Das Programm
+		// ist im Wesentlichen also auf Speichereffizienz und Verständlichkeit des Programmcodes optimiert.
+		//
+		// Ich bitte darum, dies zu berücksichtigen.
 		try {
 			Map<String, String> parsedArgs
 					= CommandLineParser.parse(args);
@@ -83,23 +113,44 @@ public final class ImageConverter {
 				throw new PropraException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
 			}
 
-			ImageParser inputParser = getImageParserForFileName(Paths.get(inputFilePath));
-			ImageParser outputParser = getImageParserForFileName(Paths.get(outputFilePath));
+			// Öffnet die Eingabedatei zum Lesen.
+			// Wird implizit durch das Schließen des ImageReader geschlossen.
+			BinaryReader binaryReader =
+					new BinaryReader(
+							new RandomAccessFile(
+									Paths.get(inputFilePath).toFile(), "r")
+					);
 
-			Picture picture = null;
-			try (BinaryReader fs = new BinaryReader(new FileInputStream(inputFilePath))) {
-				picture = inputParser.parse(fs);
-			}
+			try (ImageReader imageReader = createImageReaderForFileName(Paths.get(inputFilePath), binaryReader)) {
+				// Öffnet die Ausgabedatei zum Lesen und zum Schreiben
+				// Wird implizit durch das Schließen des ImageWriter geschlossen.
+				BinaryReadWriter binaryReadWriter = new BinaryReadWriter(
+						new RandomAccessFile(
+								Paths.get(outputFilePath).toFile(), "rw")
+				);
 
-			try (BinaryWriter os = new BinaryWriter(new FileOutputStream(outputFilePath))) {
-				outputParser.write(picture, os);
+				// Erstellt einen ImageWriter mit den Dimensionen der
+				// Eingabedatei.
+				try (ImageWriter imageWriter = createImageWriterForFileName(Paths.get(outputFilePath), binaryReadWriter, imageReader.getWidth(), imageReader.getHeight())) {
+					while (imageReader.hasNextPixel()) {
+						// Pixelweise werden die Bilddaten von einer Datei
+						// in die andere kopiert.
+						byte[] rgbPixel = imageReader.readNextPixel();
+
+						imageWriter.writeNextPixel(rgbPixel);
+					}
+				}
+
 			}
 
 		} catch (Exception exception) {
-			// Wir fangen hier einfach alle Exceptions
+			// Wir fangen hier einfacher erstmal alle Exceptions
 			// damit sind auch alle Runtime-Exceptions
 			// und insbesondere die PropraExceptions berücksichtigt.
-			System.out.println("Die Konvertierung ist fehlgeschlagen: " + exception.getMessage());
+
+			exception.printStackTrace();
+			System.out.println("Es ist eine " + exception.getClass().getSimpleName() + " aufgetreten.");
+			System.out.println("Folgende Nachricht enthält die Exception: " + (exception.getMessage() != null ? exception.getMessage() : "[Keine Nachricht]"));
 
 			System.exit(123);
 		}

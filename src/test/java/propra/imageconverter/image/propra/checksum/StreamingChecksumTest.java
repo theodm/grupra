@@ -1,8 +1,7 @@
 package propra.imageconverter.image.propra.checksum;
 
 import org.junit.jupiter.api.Test;
-import propra.imageconverter.image.BinaryReader;
-import propra.imageconverter.image.propra.PropraParser;
+import propra.imageconverter.image.propra.Checksum;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,11 +13,13 @@ class StreamingChecksumTest {
 	public long calcForString(String str) throws IOException {
 		byte[] test = str.getBytes();
 
-		return new StreamingChecksum(new BinaryReader(new ByteArrayInputStream(test))).verifyChecksumAndLength(BigInteger.valueOf(test.length));
-	}
+        return calcForByteArray(test);
+    }
 
-	public long calcForByteArray(byte[] bytes) {
-		return new PropraParser().generateChecksum(bytes, bytes.length);
+    public long calcForByteArray(byte[] bytes) throws IOException {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
+            return Checksum.calcStreamingChecksum(BigInteger.valueOf(bytes.length), bis::read);
+        }
 	}
 
 	@Test
