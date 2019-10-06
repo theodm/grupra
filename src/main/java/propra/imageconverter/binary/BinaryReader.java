@@ -1,7 +1,6 @@
 package propra.imageconverter.binary;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.math.BigInteger;
 
 /**
@@ -13,9 +12,9 @@ import java.math.BigInteger;
  * vereinfachen. Java unterstützt nativ keine vorzeichenlosen Zahlen.
  */
 public class BinaryReader implements AutoCloseable {
-    private final RandomAccessFile dataInput;
+    private final BufferedRandomAccessFile dataInput;
 
-    public BinaryReader(RandomAccessFile dataInput) {
+    public BinaryReader(BufferedRandomAccessFile dataInput) {
         this.dataInput = dataInput;
     }
 

@@ -3,7 +3,6 @@ package propra.imageconverter.binary;
 import propra.PropraException;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.math.BigInteger;
 
 /**
@@ -12,9 +11,9 @@ import java.math.BigInteger;
  * an.
  */
 public final class BinaryReadWriter extends BinaryReader implements AutoCloseable {
-    private final RandomAccessFile dataInputOutput;
+    private final BufferedRandomAccessFile dataInputOutput;
 
-    public BinaryReadWriter(RandomAccessFile dataInputOutput) {
+    public BinaryReadWriter(BufferedRandomAccessFile dataInputOutput) {
         super(dataInputOutput);
         this.dataInputOutput = dataInputOutput;
     }
