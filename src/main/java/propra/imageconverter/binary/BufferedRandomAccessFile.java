@@ -15,9 +15,6 @@ public class BufferedRandomAccessFile implements AutoCloseable {
     private long bufEnd = 0;
     private long filePosition = 0;
 
-    {
-        throw new PropraException("");
-    }
 
     public BufferedRandomAccessFile(RandomAccessFile raf) {
         this.raf = raf;
@@ -40,24 +37,36 @@ public class BufferedRandomAccessFile implements AutoCloseable {
         filePosition += targetArray.length;
     }
 
-        if(sourceArray.length >(bufEnd -bufStart))
 
     public void write(byte[] sourceArray) throws IOException {
         writeBuffer = true;
 
         int remainingBufferLength = (int) (bufEnd - filePosition);
 
-        if (sourceArray.length > remainingBufferLength)
+        // Der aktuelle Schreibvorgang würde über den aktuellen Buffer hinausschreiben.
+        if (sourceArray.length > remainingBufferLength) {
+            int overBytes = sourceArray.length - remainingBufferLength;
 
-            readIntoBuffer(filePosition);
+            // Wir vergrößern den Buffer, falls, BUFFER_SIZE nicht überschritten wird
+            if ((bufEnd - bufStart) + overBytes < BUFFER_SIZE) {
+                bufEnd = bufEnd + overBytes;
+            } else {
+                // Ansonsten schreiben wir den aktuellen Buffer
+                // und versuchen es erneut
+                readIntoBuffer(filePosition);
+
+                if ((bufEnd - bufStart) + sourceArray.length < BUFFER_SIZE) {
+                    bufEnd = bufEnd + sourceArray.length;
+                } else {
+                    throw new PropraException("");
+                }
+            }
+        }
+
+        System.arraycopy(sourceArray, 0, buffer, (int) (filePosition - bufStart), sourceArray.length);
+
+        filePosition += sourceArray.length;
     }
-
-        System.arraycopy(sourceArray,0,buffer,(int)(filePosition -bufStart),sourceArray.length);
-
-    bufEnd +=sourceArray.length;
-    filePosition +=sourceArray.length;
-
-}
 
     private void writeBufferIntoFile() throws IOException {
         raf.seek(bufStart);
@@ -80,7 +89,7 @@ public class BufferedRandomAccessFile implements AutoCloseable {
         }
 
         bufStart = fromFilePosition;
-        bufEnd = fromFilePosition + bufEnd;
+        bufEnd = fromFilePosition + bytesRead;
     }
 
     public void seek(long pos) throws IOException {
