@@ -15,7 +15,6 @@ public class BufferedRandomAccessFile implements AutoCloseable {
     private long bufEnd = 0;
     private long filePosition = 0;
 
-
     public BufferedRandomAccessFile(RandomAccessFile raf) {
         this.raf = raf;
     }
