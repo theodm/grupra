@@ -9,3 +9,6 @@ build
 !.idea
 /*.tga
 /*.propra
+
+test_gross2.tga
+testor.tga
