@@ -11,9 +11,14 @@ import java.math.BigInteger;
  * werden.
  */
 public final class Checksum {
+    private Checksum() {
+
+    }
+
     /**
      * Der Prüfsummenalgorithmus in einer Form, in dem er einen Stream von
-     * Daten ausliest.
+     * Daten ausliest. Die Methode ist unter https://moodle-wrm.fernuni-hagen.de/mod/page/view.php?id=40779
+     * dolumentiert.
      *
      * @param n      Länge der Eingabe
      * @param reader Methode die das nächste Byte der Eingabe zurückgibt

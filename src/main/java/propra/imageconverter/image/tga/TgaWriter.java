@@ -1,12 +1,11 @@
 package propra.imageconverter.image.tga;
 
-import propra.imageconverter.binary.BinaryReadWriter;
+import propra.imageconverter.binary.LittleEndianOutputStream;
+import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageWriter;
 import propra.imageconverter.util.ArrayUtils;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 
 /**
@@ -16,43 +15,42 @@ import java.util.Arrays;
  * wieder zu schließen.
  */
 public final class TgaWriter implements ImageWriter {
-    private final BinaryReadWriter binaryOutput;
-    private final BufferedOutputStream bufferedOutputStream;
-    private final BigInteger lengthOfContent;
+    private final ReadWriteFile readWriteFile;
+    private final LittleEndianOutputStream outputStream;
 
-    private TgaWriter(BinaryReadWriter binaryOutput, BigInteger lengthOfContent) throws IOException {
-        this.binaryOutput = binaryOutput;
-        this.lengthOfContent = lengthOfContent;
-        this.bufferedOutputStream = binaryOutput.bufferedOutputStream();
+    private TgaWriter(
+            ReadWriteFile readWriteFile,
+            LittleEndianOutputStream outputStream
+    ) {
+        this.readWriteFile = readWriteFile;
+        this.outputStream = outputStream;
     }
 
     /**
      * Erstellt einen TgaWriter mit den gegebenen Dimensionen.
      */
     public static TgaWriter create(
-            BinaryReadWriter binaryOutput,
+            ReadWriteFile readWriteFile,
             int width,
             int height
     ) throws IOException {
-        binaryOutput.writeUByte(0); // Länge der Bild-ID
-        binaryOutput.writeUByte(0); // Palettentyp
-        binaryOutput.writeUByte(2); // Bildtyp, nur unterstützt 2 = RGB(24 oder 32 Bit) unkomprimiert
-        binaryOutput.writeN(new byte[]{0, 0, 0, 0, 0}); // Palletenbeginn, Palettenlänge und Palettengröße immer 0, da keine Palette vorhanden
-        binaryOutput.writeUShort(0); // X-Koordinate für Nullpunkt, siehe parse()
-        binaryOutput.writeUShort(height); // Y-Koordinate für Nullpunkt
-        binaryOutput.writeUShort(width); // Breite des Bilds
-        binaryOutput.writeUShort(height); // Länge des Bilds
-        binaryOutput.writeUByte(24); // Bits pro Bildpunkt, nach Vorgabe immer 24
-        binaryOutput.writeUByte(0b00100000); // Attribut-Byte, nach Vorgabe, siehe parse()
+        LittleEndianOutputStream outputStream = readWriteFile.outputStream(0);
 
-        BigInteger lengthOfContent = BigInteger.ONE
-                .multiply(BigInteger.valueOf(width))
-                .multiply(BigInteger.valueOf(height))
-                .multiply(BigInteger.valueOf(3));
+        outputStream.writeUByte(0); // Länge der Bild-ID
+        outputStream.writeUByte(0); // Palettentyp
+        outputStream.writeUByte(2); // Bildtyp, nur unterstützt 2 = RGB(24 oder 32 Bit) unkomprimiert
+        outputStream.writeFully(new byte[] { 0, 0, 0, 0, 0 }); // Palletenbeginn, Palettenlänge und Palettengröße immer 0, da keine Palette vorhanden
+        outputStream.writeUShort(0); // X-Koordinate für Nullpunkt, siehe parse()
+        outputStream.writeUShort(height); // Y-Koordinate für Nullpunkt
+        outputStream.writeUShort(width); // Breite des Bilds
+        outputStream.writeUShort(height); // Länge des Bilds
+        outputStream.writeUByte(24); // Bits pro Bildpunkt, nach Vorgabe immer 24
+        outputStream.writeUByte(0b00100000); // Attribut-Byte, nach Vorgabe, siehe parse()
 
-        return new TgaWriter(binaryOutput, lengthOfContent);
+        return new TgaWriter(readWriteFile, outputStream);
     }
 
+    @Override
     public void writeNextPixel(byte[] rgbPixel) throws IOException {
         // Wir kopieren hier den übertragenen Pixel,
         // damit wir das Byte-Array des Aufrufers nicht Ausversehen
@@ -61,7 +59,7 @@ public final class TgaWriter implements ImageWriter {
 
         ArrayUtils.swap(pixelForWrite, 0, 2);
 
-        bufferedOutputStream.write(pixelForWrite);
+        outputStream.writeFully(pixelForWrite);
     }
 
     @Override
@@ -70,6 +68,7 @@ public final class TgaWriter implements ImageWriter {
         // ToDo: überprüfen, ob wirklich alle Daten für
         // ToDo: übergebene Breite und Höhe geschrieben wurde.
         // ToDo: Zunächst aber erstmal nicht, wegen YAGNI.
-        binaryOutput.close();
+        readWriteFile.releaseOutputStream();
+        readWriteFile.close();
     }
 }

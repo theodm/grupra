@@ -1,8 +1,7 @@
 package propra.imageconverter;
 
 import propra.PropraException;
-import propra.imageconverter.binary.BinaryReadWriter;
-import propra.imageconverter.binary.BinaryReader;
+import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.cmd.CommandLineParser;
 import propra.imageconverter.image.ImageReader;
 import propra.imageconverter.image.ImageWriter;
@@ -13,7 +12,6 @@ import propra.imageconverter.image.tga.TgaWriter;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.math.BigInteger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -39,14 +37,14 @@ public final class ImageConverter {
 	 * Erstellt einen ImageReader für das Format, welches anhand der
 	 * Dateiendung des übergebenen Pfads erkannt wurde.
 	 */
-	private static ImageReader createImageReaderForFileName(Path path, BinaryReader binaryReader) throws IOException {
+	private static ImageReader createImageReaderForFileName(Path path, ReadWriteFile readWriteFile) throws IOException {
 		String extension = calcFileExtension(path.getFileName().toString());
 
 		switch (extension) {
 			case "tga":
-				return TgaReader.create(binaryReader);
+				return TgaReader.create(readWriteFile);
 			case "propra":
-				return PropraReader.create(binaryReader);
+				return PropraReader.create(readWriteFile);
 		}
 
 		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
@@ -56,14 +54,14 @@ public final class ImageConverter {
 	 * Erstellt einen ImageWriter für das Format, welches anhand der
 	 * Dateiendung des übergebenen Pfads erkannt wurde.
 	 */
-	private static ImageWriter createImageWriterForFileName(Path path, BinaryReadWriter binaryReadWriter, int width, int height) throws IOException {
+	private static ImageWriter createImageWriterForFileName(Path path, ReadWriteFile readWriteFile, int width, int height) throws IOException {
 		String extension = calcFileExtension(path.getFileName().toString());
 
 		switch (extension) {
 			case "tga":
-				return TgaWriter.create(binaryReadWriter, width, height);
+				return TgaWriter.create(readWriteFile, width, height);
 			case "propra":
-				return PropraWriter.create(binaryReadWriter, width, height);
+				return PropraWriter.create(readWriteFile, width, height);
 		}
 
 		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
@@ -96,9 +94,6 @@ public final class ImageConverter {
 		//
 		// Die Daten werden pixelweise übertragen, das wäre grds. ineffizient, sollte hier aber ohne Bedeutung sein,
 		// da die Daten in einem Buffer zwischengespeichert wurde (mittels BufferedInputStream und BufferedOutputStream).
-		// Leider ist der Code, der die Komfortablität der RandomAccessFile und der Effizienz der Streams zusammenbringen
-		// soll sehr komplex geraten. Besser wäre es gewesen, eine Implementation von RandomAccessFile zu erstellen, die
-		// Buffering selbst vornimmt. Dies wurde jedoch kurzfristig zu komplex. (Siehe auch entsprechende Anmerkungen an BinaryReader und BinaryReadWriter)
 		//
 		// Auch werden die Daten redundant mehrfach gelesen und die Prüfsumme redundant mehrfach berechnet. Dies
 		// ist nicht geschwindigkeitseffizient, macht den Code aber deutlich einfacher und lesbarer. Das Programm
@@ -119,29 +114,37 @@ public final class ImageConverter {
 
 			// Öffnet die Eingabedatei zum Lesen.
 			// Wird implizit durch das Schließen des ImageReader geschlossen.
-			BinaryReader binaryReader =
-					new BinaryReader(
+			ReadWriteFile inputReadWriteFile =
+					new ReadWriteFile(
 							new RandomAccessFile(
-									Paths.get(inputFilePath).toFile(), "r")
+									Paths.get(inputFilePath).toFile(), "r"
+							)
 					);
 
-			try (ImageReader imageReader = createImageReaderForFileName(Paths.get(inputFilePath), binaryReader)) {
+			try (ImageReader imageReader = createImageReaderForFileName(
+					Paths.get(inputFilePath),
+					inputReadWriteFile
+			)) {
 				// Öffnet die Ausgabedatei zum Lesen und zum Schreiben
 				// Wird implizit durch das Schließen des ImageWriter geschlossen.
-				BinaryReadWriter binaryReadWriter = new BinaryReadWriter(
+				ReadWriteFile outputReadWriteFile = new ReadWriteFile(
 						new RandomAccessFile(
-								Paths.get(outputFilePath).toFile(), "rw")
+								Paths.get(outputFilePath).toFile(), "rw"
+						)
 				);
 
 				// Erstellt einen ImageWriter mit den Dimensionen der
 				// Eingabedatei.
-				try (ImageWriter imageWriter = createImageWriterForFileName(Paths.get(outputFilePath), binaryReadWriter, imageReader.getWidth(), imageReader.getHeight())) {
-					BigInteger pixelsRead = BigInteger.ZERO;
+				try (ImageWriter imageWriter = createImageWriterForFileName(
+						Paths.get(outputFilePath),
+						outputReadWriteFile,
+						imageReader.getWidth(),
+						imageReader.getHeight())) {
 
+					// Pixelweise werden die Bilddaten von einer Datei
+					// in die andere kopiert. Das mag ineffizient erscheinen
+					// erfolgt aber intern gebuffert.
 					while (imageReader.hasNextPixel()) {
-						pixelsRead = pixelsRead.add(BigInteger.ONE);
-						// Pixelweise werden die Bilddaten von einer Datei
-						// in die andere kopiert.
 						byte[] rgbPixel = imageReader.readNextPixel();
 
 						imageWriter.writeNextPixel(rgbPixel);
@@ -150,7 +153,8 @@ public final class ImageConverter {
 
 			}
 
-		} catch (Exception exception) {
+		}
+		catch (Exception exception) {
 			// Wir fangen hier einfacher erstmal alle Exceptions
 			// damit sind auch alle Runtime-Exceptions
 			// und insbesondere die PropraExceptions berücksichtigt.
@@ -159,9 +163,9 @@ public final class ImageConverter {
 			System.out.println("Es ist eine " + exception.getClass().getSimpleName() + " aufgetreten.");
 			System.out.println("Folgende Nachricht enthält die Exception: " + (exception.getMessage() != null ? exception.getMessage() : "[Keine Nachricht]"));
 
-			System.exit(123);
+			//	System.exit(123);
 		}
 
-		System.exit(0);
+		//System.exit(0);
 	}
 }

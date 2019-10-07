@@ -2,11 +2,10 @@ package propra.imageconverter.binary;
 
 import propra.PropraException;
 
-import java.io.BufferedInputStream;
+import java.io.EOFException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.channels.Channels;
 
 /**
  * Hilfsklasse um Daten eines darunterliegenden Eingabestreams zu lesen. Bietet
@@ -27,31 +26,17 @@ import java.nio.channels.Channels;
  * nicht gebuffert wird und somit sehr ineffizient für kleine Schreib- und Lesevorgänge ist.
  * Bessere Lösung wäre es, dieses Buffering einzuführen, dies wurde aber kurzfristig zu komplex.
  */
-public class BinaryReader implements AutoCloseable {
-    private final RandomAccessFile dataInput;
-    /**
-     * Gibt die Position innerhalb der Datei an,
-     * unmittelbar bevor der Stream-Mode gestartet wurde.
-     * <p>
-     * Nach Freigeben des Streams wird der Filecursor wieder
-     * auf diesen Wert zurückgesetzt.
-     * <p>
-     * Der Wert -1 steht dafür, dass sich der Reader nicht im
-     * Stream-Mode befindet.
-     */
-    protected long filePositionBeforeStreamStart = -1;
+public class LittleEndianInputStream implements AutoCloseable {
+    // Die Klasse könnte auch von InputStream ableiten,
+    // das war aber bisher entbehrlich. (YAGNI)
+    private final InputStream inputStream;
 
-    public BinaryReader(RandomAccessFile dataInput) {
-        this.dataInput = dataInput;
+    public LittleEndianInputStream(InputStream inputStream) {
+        this.inputStream = inputStream;
     }
 
-    /**
-     * Wirft eine Exception, falls sich der Reader im
-     * Stream-Mode befindet. Erklärung des Stream-Mode siehe Klassenkommentar.
-     */
-    protected void throwIfInStreamMode() {
-        if (filePositionBeforeStreamStart != -1)
-            throw new PropraException("Auf die Instanz des BinaryReader bzw. BinaryWriter kann zurzeit nicht zugegriffen werden, da der Stream-Modus aktiviert ist.");
+    public int read() throws IOException {
+        return inputStream.read();
     }
 
     /**
@@ -60,9 +45,13 @@ public class BinaryReader implements AutoCloseable {
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
     public int readUByte() throws IOException {
-        throwIfInStreamMode();
+        int byteRead = inputStream.read();
 
-        return dataInput.readUnsignedByte();
+        if (byteRead == -1) {
+            throw new PropraException("Das Dateiende wurde vorzeitig erreicht.");
+        }
+
+        return byteRead;
     }
 
     /**
@@ -71,8 +60,6 @@ public class BinaryReader implements AutoCloseable {
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
     public int readUShort() throws IOException {
-        throwIfInStreamMode();
-
         int byte1 = readUByte();
         int byte2 = readUByte() << 8;
 
@@ -85,8 +72,6 @@ public class BinaryReader implements AutoCloseable {
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
     public long readUInt() throws IOException {
-        throwIfInStreamMode();
-
         long byte1 = readUByte();
         long byte2 = readUByte() << 8L;
         long byte3 = readUByte() << 16L;
@@ -101,8 +86,6 @@ public class BinaryReader implements AutoCloseable {
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
     public BigInteger readULong() throws IOException {
-        throwIfInStreamMode();
-
         BigInteger byte1 = BigInteger.valueOf(readUByte()).shiftLeft(0);
         BigInteger byte2 = BigInteger.valueOf(readUByte()).shiftLeft(8);
         BigInteger byte3 = BigInteger.valueOf(readUByte()).shiftLeft(16);
@@ -124,58 +107,15 @@ public class BinaryReader implements AutoCloseable {
     }
 
     /**
-     * Setzt den Datei-Cursor an die Position [pos] ausgehend
-     * vom Anfang der Datei.
-     */
-    public void seek(long pos) throws IOException {
-        throwIfInStreamMode();
-
-        dataInput.seek(pos);
-    }
-
-    /**
      * Überspringt die nächsten [n] Bytes des darunterliegenden Eingabestream.
      * <p>
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
     public void skip(int n) throws IOException {
-        throwIfInStreamMode();
-
         // Wir nutzen readFully statt Skip, da
         // die Funktion bei Erreichen des EOF
         // eine Exception auswirft.
-        dataInput.readFully(new byte[n]);
-    }
-
-    /**
-     * Gibt einen BufferedInputStream von der aktuellen Stelle in
-     * der Datei zurück und überführt den Reader in den Stream-Mode.
-     * <p>
-     * Der Benutzer muss den BufferedInputStream mittels releaseInputStream
-     * wieder freigeben.
-     * <p>
-     * Für eine Erläuterung des Stream-Mode: Siehe Klassenkommentar.
-     */
-    public BufferedInputStream bufferedInputStream() throws IOException {
-        throwIfInStreamMode();
-
-        // Alte Position in der Datei merken,
-        // um sie wiederherzustellen
-        filePositionBeforeStreamStart = dataInput.getFilePointer();
-
-        return new BufferedInputStream(Channels.newInputStream(dataInput.getChannel()));
-    }
-
-    /**
-     * Beendet den Stream-Mode und gibt den BufferedInputStream wieder frei.
-     */
-    public void releaseInputStream() throws IOException {
-        // Alte Position wiederherstellen
-        dataInput.seek(filePositionBeforeStreamStart);
-        filePositionBeforeStreamStart = -1;
-
-        // BufferedInputStream darf nicht geschlossen werden,
-        // da sonst der zugrundeliegende FileChannel geschlossen würde.
+        readFully(new byte[n]);
     }
 
     /**
@@ -184,27 +124,15 @@ public class BinaryReader implements AutoCloseable {
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
     public void readFully(byte[] targetArray) throws IOException {
-        throwIfInStreamMode();
+        int bytesRead = inputStream.read(targetArray);
 
-        dataInput.readFully(targetArray);
+        if (bytesRead != targetArray.length) {
+            throw new EOFException();
+        }
     }
 
     @Override
     public void close() throws IOException {
-        dataInput.close();
-    }
-
-    /**
-     * Gibt zurück, ob sich der Datei-Cursor am Ende der
-     * Datei befindet. Ändert den Datei-Cursor nicht.
-     */
-    public boolean isAtEndOfFile() throws IOException {
-        throwIfInStreamMode();
-
-        long lastFilePointer = dataInput.getFilePointer();
-        int byteRead = dataInput.read();
-        dataInput.seek(lastFilePointer);
-
-        return byteRead == -1;
+        inputStream.close();
     }
 }

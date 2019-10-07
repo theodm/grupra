@@ -3,8 +3,11 @@ package propra.imageconverter.image.propra;
 /**
  * Die Klasse enthält Informationen, die sowohl
  * vom PropraReader, als auch vom PropraWriter verwendet und benötigt werden.
+ *
+ * Das Propra-Format ist unter https://moodle-wrm.fernuni-hagen.de/mod/page/view.php?id=40779
+ * dokumentiert.
  */
-class PropraFileFormat {
+final class PropraFileFormat {
     /**
      * Der statische Beginn einer Propa-Datei.
      */
