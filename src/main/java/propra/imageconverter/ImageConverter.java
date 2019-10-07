@@ -68,7 +68,7 @@ public final class ImageConverter {
 	}
 
 	/**
-	 * Einstiegspunkt für das Programm entsprechend der Vorgaben.
+	 * Führt die Konvertierung enstprechend der Vorgaben aus.
 	 *
 	 * @param args Die Argumente für die Kommandozeile. Entsprechend der Anforderungen gibt
 	 *             es die folgenden Parameter.
@@ -78,11 +78,7 @@ public final class ImageConverter {
 	 *             <p>
 	 *             Beispiel: --input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga
 	 */
-	public static void main(
-			String[] args
-	) {
-		// Anmerkungen an den oder die Korrektor/in
-		//
+	public static void startWithArgs(String[] args) throws Exception {
 		// Diese Implementierung des Bildkonvertierers hat auch das Ziel große Bilddateien
 		// zu unterstützen. Siehe dazu auch die Diskussion im Moodle-Diskussionsforum unter
 		// https://moodle-wrm.fernuni-hagen.de/mod/forum/discuss.php?d=23707.
@@ -98,64 +94,73 @@ public final class ImageConverter {
 		// Auch werden die Daten redundant mehrfach gelesen und die Prüfsumme redundant mehrfach berechnet. Dies
 		// ist nicht geschwindigkeitseffizient, macht den Code aber deutlich einfacher und lesbarer. Das Programm
 		// ist im Wesentlichen also auf Speichereffizienz und Verständlichkeit des Programmcodes optimiert.
-		//
-		// Ich bitte darum, dies zu berücksichtigen.
-		try {
-			Map<String, String> parsedArgs
-					= CommandLineParser.parse(args);
+		Map<String, String> parsedArgs
+				= CommandLineParser.parse(args);
 
-			String inputFilePath = parsedArgs.get("input");
-			String outputFilePath = parsedArgs.get("output");
+		String inputFilePath = parsedArgs.get("input");
+		String outputFilePath = parsedArgs.get("output");
 
-			if (inputFilePath == null
-					|| outputFilePath == null) {
-				throw new PropraException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
-			}
+		if (inputFilePath == null
+				|| outputFilePath == null) {
+			throw new PropraException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
+		}
 
-			// Öffnet die Eingabedatei zum Lesen.
-			// Wird implizit durch das Schließen des ImageReader geschlossen.
-			ReadWriteFile inputReadWriteFile =
-					new ReadWriteFile(
-							new RandomAccessFile(
-									Paths.get(inputFilePath).toFile(), "r"
-							)
-					);
-
-			try (ImageReader imageReader = createImageReaderForFileName(
-					Paths.get(inputFilePath),
-					inputReadWriteFile
-			)) {
-				// Öffnet die Ausgabedatei zum Lesen und zum Schreiben
-				// Wird implizit durch das Schließen des ImageWriter geschlossen.
-				ReadWriteFile outputReadWriteFile = new ReadWriteFile(
+		// Öffnet die Eingabedatei zum Lesen.
+		// Wird implizit durch das Schließen des ImageReader geschlossen.
+		ReadWriteFile inputReadWriteFile =
+				new ReadWriteFile(
 						new RandomAccessFile(
-								Paths.get(outputFilePath).toFile(), "rw"
+								Paths.get(inputFilePath).toFile(), "r"
 						)
 				);
 
-				// Erstellt einen ImageWriter mit den Dimensionen der
-				// Eingabedatei.
-				try (ImageWriter imageWriter = createImageWriterForFileName(
-						Paths.get(outputFilePath),
-						outputReadWriteFile,
-						imageReader.getWidth(),
-						imageReader.getHeight())) {
+		try (ImageReader imageReader = createImageReaderForFileName(
+				Paths.get(inputFilePath),
+				inputReadWriteFile
+		)) {
+			// Öffnet die Ausgabedatei zum Lesen und zum Schreiben
+			// Wird implizit durch das Schließen des ImageWriter geschlossen.
+			ReadWriteFile outputReadWriteFile = new ReadWriteFile(
+					new RandomAccessFile(
+							Paths.get(outputFilePath).toFile(), "rw"
+					)
+			);
 
-					// Pixelweise werden die Bilddaten von einer Datei
-					// in die andere kopiert. Das mag ineffizient erscheinen
-					// erfolgt aber intern gebuffert.
-					while (imageReader.hasNextPixel()) {
-						byte[] rgbPixel = imageReader.readNextPixel();
+			// Erstellt einen ImageWriter mit den Dimensionen der
+			// Eingabedatei.
+			try (ImageWriter imageWriter = createImageWriterForFileName(
+					Paths.get(outputFilePath),
+					outputReadWriteFile,
+					imageReader.getWidth(),
+					imageReader.getHeight())) {
 
-						imageWriter.writeNextPixel(rgbPixel);
-					}
+				// Pixelweise werden die Bilddaten von einer Datei
+				// in die andere kopiert. Das mag ineffizient erscheinen
+				// erfolgt aber intern gebuffert.
+				while (imageReader.hasNextPixel()) {
+					byte[] rgbPixel = imageReader.readNextPixel();
+
+					imageWriter.writeNextPixel(rgbPixel);
 				}
-
 			}
-
 		}
-		catch (Exception exception) {
-			// Wir fangen hier einfacher erstmal alle Exceptions
+	}
+
+	/**
+	 * Einstiegspunkt für das Programm entsprechend der Vorgaben.
+	 */
+	public static void main(
+			String[] args
+	) {
+		try {
+			// Die Main-Methode delegiert nur an
+			// die Methode startWithArgs, die die Konvertierung
+			// durchführt. Da System.exit(...) ausgeführt wird kann die
+			// echte Main-Methode nicht durch JUnit ausgeführt werden,
+			// da der JUnit-Runner auch beendet würde.
+			startWithArgs(args);
+		} catch (Exception exception) {
+			// Wir fangen hier  alle Exceptions
 			// damit sind auch alle Runtime-Exceptions
 			// und insbesondere die PropraExceptions berücksichtigt.
 
@@ -163,9 +168,11 @@ public final class ImageConverter {
 			System.out.println("Es ist eine " + exception.getClass().getSimpleName() + " aufgetreten.");
 			System.out.println("Folgende Nachricht enthält die Exception: " + (exception.getMessage() != null ? exception.getMessage() : "[Keine Nachricht]"));
 
-			//	System.exit(123);
+			// Fehlerstatuscode zurückgeben
+			System.exit(123);
 		}
 
-		//System.exit(0);
+		// Erfolgsstatuscode zurückgeben
+		System.exit(0);
 	}
 }
