@@ -2,7 +2,6 @@ package propra.imageconverter.binary;
 
 import propra.PropraException;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -127,7 +126,7 @@ public class LittleEndianInputStream implements AutoCloseable {
         int bytesRead = inputStream.read(targetArray);
 
         if (bytesRead != targetArray.length) {
-            throw new EOFException();
+			throw new PropraException("Das Dateiende wurde vorzeitig erreicht.");
         }
     }
 
