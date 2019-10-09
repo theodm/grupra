@@ -79,11 +79,6 @@ public final class ImageConverter {
 	 *             Beispiel: --input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga
 	 */
 	public static void startWithArgs(String[] args) throws Exception {
-        //
-        // Die Dateien zum Test der Funktionalität sind nicht enthalten, da sie mit JUnit erstellt wurden
-        // und Drittbibliotheken nicht erlaubt sind. Desweiteren sind die Tests im Wesentlichen wertlos,
-        // da das Auslieferungspaket keine Dateien anders als .java erlaubt.
-        //
 		// Diese Implementierung des Bildkonvertierers hat auch das Ziel große Bilddateien
 		// zu unterstützen. Siehe dazu auch die Diskussion im Moodle-Diskussionsforum unter
 		// https://moodle-wrm.fernuni-hagen.de/mod/forum/discuss.php?d=23707.

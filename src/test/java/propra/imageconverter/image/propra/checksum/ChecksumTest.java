@@ -1,5 +1,6 @@
 package propra.imageconverter.image.propra.checksum;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import propra.imageconverter.image.propra.Checksum;
 
@@ -9,20 +10,27 @@ import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class StreamingChecksumTest {
-	public long calcForString(String str) throws IOException {
+class ChecksumTest {
+	/**
+	 * Nimm einen Test vor, für eine Eingabe, die als String vorliegt.
+	 */
+	private long calcForString(String str) throws IOException {
 		byte[] test = str.getBytes();
 
         return calcForByteArray(test);
-    }
+	}
 
-    public long calcForByteArray(byte[] bytes) throws IOException {
+	/**
+	 * Nimm einen Test vor, für eine Eingabe, die als Byte-Array vorliegt.
+	 */
+	private long calcForByteArray(byte[] bytes) throws IOException {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
             return Checksum.calcStreamingChecksum(BigInteger.valueOf(bytes.length), bis::read);
         }
 	}
 
 	@Test
+	@DisplayName("Die Prüfsummen für die Beispielfälle werden korrekt generiert.")
 	void checksumTest() throws IOException {
 		assertEquals(0x00750076, calcForString("t"));
 		assertEquals(0x00DC0152, calcForString("te"));
