@@ -14,16 +14,6 @@ import java.math.BigInteger;
  * Datentyp zurückgegeben, um das Handling von vorzeichenlosen Zahlen zu
  * vereinfachen. Java unterstützt nativ keine vorzeichenlosen Zahlen.
  * <p>
- * Der BinaryReader unsterstützt einen sogenannten Stream-Mode:
- * <p>
- * Man kann an beliebegen Stellen innerhalb der Datei einen
- * BufferedInputStream erstellen, mit dem man die Daten effizient
- * einlesen kann. Während der Stream-Mode aktiviert ist, können die anderen
- * Methoden des BinaryReader nicht genutzt werden.
- * <p>
- * Das ganze wird gemacht, da die zugrundeliegende Datenstruktur RandomAccessFile
- * nicht gebuffert wird und somit sehr ineffizient für kleine Schreib- und Lesevorgänge ist.
- * Bessere Lösung wäre es, dieses Buffering einzuführen, dies wurde aber kurzfristig zu komplex.
  */
 public class LittleEndianInputStream implements AutoCloseable {
     // Die Klasse könnte auch von InputStream ableiten,

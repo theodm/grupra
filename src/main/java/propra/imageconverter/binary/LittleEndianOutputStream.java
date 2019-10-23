@@ -10,8 +10,6 @@ import java.math.BigInteger;
  * Die Klasse wrappt einen (gebufferten) Ausgabestream und bietet
  * einfache Methoden zum Schreiben und Lesen von Daten im Little-Endian-Format
  * an.
- * <p>
- * Die Klasse unterstützt den sogenannten Stream-Mode wie der BinaryReader.
  */
 public final class LittleEndianOutputStream implements AutoCloseable {
 	// Die Klasse könnte auch von OutputStream ableiten,
@@ -33,7 +31,7 @@ public final class LittleEndianOutputStream implements AutoCloseable {
 	 * Schreibt ein vorzeichenloses Byte in den Datenstream.
 	 */
 	public void writeUByte(int value) throws IOException {
-		if (value < 0 || value >= (2 << 7))
+        if (value < 0 || value > 0b1111_1111)
 			throwOutOfBounds();
 
 		outputStream.write(value);
@@ -43,7 +41,7 @@ public final class LittleEndianOutputStream implements AutoCloseable {
 	 * Schreibt ein vorzeichenloses Short (2 Byte) in den Datenstream.
 	 */
 	public void writeUShort(int value) throws IOException {
-		if (value < 0 || value >= (2 << 15))
+        if (value < 0 || value > 0b1111_1111_1111_1111)
 			throwOutOfBounds();
 
 		outputStream.write(value % 256);
@@ -54,7 +52,7 @@ public final class LittleEndianOutputStream implements AutoCloseable {
 	 * Schreibt ein vorzeichenloses Int (4 Byte) in den Datenstream.
 	 */
 	public void writeUInt(long value) throws IOException {
-		if (value < 0L || value > (2L << 31L))
+        if (value < 0L || value > 0b1111_1111_1111_1111_1111_1111_1111_1111L)
 			throwOutOfBounds();
 
 		outputStream.write((int) (value % 256));

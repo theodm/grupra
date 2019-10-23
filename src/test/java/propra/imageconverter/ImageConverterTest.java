@@ -35,6 +35,7 @@ class ImageConverterTest {
     static List<TestCase> successfulTestCases() {
         return List.of(
                 new TestCase("[Erfolgsfall] TGA -> Propra -> TGA: mit 1 x 1 Pixel", "tga_1pixel.tga", "tga_1pixel.propra"),
+                //       new TestCase("[Erfolgsfall] TGA -> Propra -> TGA: mit Metadaten", "tga_with_meta.tga", "tga_with_meta.propra"),
                 new TestCase("[Erfolgsfall] TGA -> Propra -> TGA: vorgegebener Testfall 1", "test_01_uncompressed.tga", "test_01_uncompressed.propra"),
                 new TestCase("[Erfolgsfall] TGA -> Propra -> TGA: vorgegebener Testfall 2", "test_02_uncompressed.tga", "test_02_uncompressed.propra"),
                 new TestCase("[Erfolgsfall] Propra -> TGA -> Propra: vorgegebener Testfall 3", "test_03_uncompressed.propra", "test_03_uncompressed.tga"),
