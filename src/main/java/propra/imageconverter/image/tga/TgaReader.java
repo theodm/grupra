@@ -4,6 +4,7 @@ import propra.PropraException;
 import propra.imageconverter.binary.LittleEndianInputStream;
 import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageReader;
+import propra.imageconverter.image.tga.compression.reader.TGACompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
@@ -20,6 +21,7 @@ public final class TgaReader implements ImageReader {
     private final int width;
     private final int height;
     private final BigInteger lengthOfContent;
+    private final TGACompressionReader compression;
 
     /**
      * Aktuelle Leseposition des Datensegments in Bytes.
@@ -31,13 +33,14 @@ public final class TgaReader implements ImageReader {
             LittleEndianInputStream inputStream,
             int width,
             int height,
-            BigInteger lengthOfContent
-    ) {
+            BigInteger lengthOfContent,
+            TGACompressionReader compression) {
         this.readWriteFile = readWriteFile;
         this.inputStream = inputStream;
         this.width = width;
         this.height = height;
         this.lengthOfContent = lengthOfContent;
+        this.compression = compression;
     }
 
     public static TgaReader create(
@@ -57,8 +60,9 @@ public final class TgaReader implements ImageReader {
 
         // Bildtyp
         // nur unterstützt: 2 = RGB (24 oder 32 Bit) unkomprimiert
+        //                 10 = RGB (24 oder 32 Bit) RLE-komprimiert
         int pictureType = dataInput.readUByte();
-        require(pictureType == 2, "Es wird im TGA-Format nur der Bildtyp 2 unterstützt. Angegeben wurde Bildtyp " + pictureType + ".");
+        require(pictureType == 2 || pictureType == 10, "Es wird im TGA-Format nur der Bildtyp 2 oder 10 unterstützt. Angegeben wurde Bildtyp " + pictureType + ".");
 
         // Palettenbeginn, Palettenlänge und Palettengröße überspringen
         dataInput.skip(5);
@@ -95,7 +99,10 @@ public final class TgaReader implements ImageReader {
                 .multiply(BigInteger.valueOf(height))
                 .multiply(BigInteger.valueOf(3));
 
-        return new TgaReader(readWriteFile, dataInput, width, height, lengthOfContent);
+        TGACompressionReader compression =
+                TGACompressionReader.fromPictureType(pictureType);
+
+        return new TgaReader(readWriteFile, dataInput, width, height, lengthOfContent, compression);
     }
 
     /**
@@ -118,14 +125,14 @@ public final class TgaReader implements ImageReader {
 
     @Override
     public byte[] readNextPixel() throws IOException {
-        byte[] nextPixel = new byte[3];
-
-        inputStream.readFully(nextPixel);
+        byte[] nextPixel = compression.readNextPixel(inputStream);
 
         // Wir lesen im Format BGR, wollen aber
         // dem Aufrufer das Format RGB liefern.
         ArrayUtils.swap(nextPixel, 0, 2);
 
+        // Aktuelle Position (in Bildpunkten) in der Datei
+        // aktualisieren
         currentPosInContent = currentPosInContent.add(BigInteger.valueOf(3));
 
         return nextPixel;
