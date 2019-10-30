@@ -94,7 +94,7 @@ public final class PropraWriter implements ImageWriter {
         long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::read);
         readWriteFile.releaseInputStream();
 
-        // Wir setzenden Cursor des darunterliegenden Ausgabestreams
+        // Wir setzen den Cursor des darunterliegenden Ausgabestreams
         // an die Position der Prüfsumme
         // Wir schreiben die Prüfsumme und schließen den Ausgabestream
         LittleEndianOutputStream outputStream = readWriteFile.outputStream(PropraFileFormat.OFFSET_CHECKSUM);
