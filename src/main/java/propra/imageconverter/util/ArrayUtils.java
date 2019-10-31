@@ -14,4 +14,11 @@ public final class ArrayUtils {
         byteArray[index1] = byteArray[index2];
         byteArray[index2] = temp;
     }
+
+    public static String formatRGBPixelOrNull(byte[] rgb) {
+        if (rgb == null)
+            return "<null>";
+
+        return String.format("#%X%X%X", rgb[0], rgb[1], rgb[2]);
+    }
 }

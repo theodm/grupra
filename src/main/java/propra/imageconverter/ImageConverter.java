@@ -9,6 +9,7 @@ import propra.imageconverter.image.propra.PropraReader;
 import propra.imageconverter.image.propra.PropraWriter;
 import propra.imageconverter.image.tga.TgaReader;
 import propra.imageconverter.image.tga.TgaWriter;
+import propra.imageconverter.image.tga.compression.CompressionType;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -54,12 +55,18 @@ public final class ImageConverter {
 	 * Erstellt einen ImageWriter für das Format, welches anhand der
 	 * Dateiendung des übergebenen Pfads erkannt wurde.
 	 */
-	private static ImageWriter createImageWriterForFileName(Path path, ReadWriteFile readWriteFile, int width, int height) throws IOException {
+	private static ImageWriter createImageWriterForFileName(
+			Path path,
+			ReadWriteFile readWriteFile,
+			int width,
+			int height,
+			CompressionType compressionType
+	) throws IOException {
 		String extension = calcFileExtension(path.getFileName().toString());
 
 		switch (extension) {
 			case "tga":
-				return TgaWriter.create(readWriteFile, width, height);
+				return TgaWriter.create(readWriteFile, width, height, compressionType);
 			case "propra":
 				return PropraWriter.create(readWriteFile, width, height);
 		}
@@ -99,11 +106,17 @@ public final class ImageConverter {
 
 		String inputFilePath = parsedArgs.get("input");
 		String outputFilePath = parsedArgs.get("output");
+		// Um die Abwärtskompatiblität zu KE1 zu gewährleisten,
+		// wird für compression als Default-Wert uncompressed genutzt
+		String compression = parsedArgs.getOrDefault("compression", "uncompressed");
 
 		if (inputFilePath == null
 				|| outputFilePath == null) {
 			throw new PropraException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
 		}
+
+		CompressionType parsedCompressionType
+				= CompressionType.parseCommandLineArgument(compression);
 
 		// Öffnet die Eingabedatei zum Lesen.
 		// Wird implizit durch das Schließen des ImageReader geschlossen.
@@ -127,12 +140,14 @@ public final class ImageConverter {
 			);
 
 			// Erstellt einen ImageWriter mit den Dimensionen der
-			// Eingabedatei.
+			// Eingabedatei und dem entsprechenden Kompressionstyp.
 			try (ImageWriter imageWriter = createImageWriterForFileName(
 					Paths.get(outputFilePath),
 					outputReadWriteFile,
 					imageReader.getWidth(),
-					imageReader.getHeight())) {
+					imageReader.getHeight(),
+					parsedCompressionType
+			)) {
 
 				// Pixelweise werden die Bilddaten von einer Datei
 				// in die andere kopiert. Das mag ineffizient erscheinen

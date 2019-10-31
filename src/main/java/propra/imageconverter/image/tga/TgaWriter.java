@@ -3,6 +3,8 @@ package propra.imageconverter.image.tga;
 import propra.imageconverter.binary.LittleEndianOutputStream;
 import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageWriter;
+import propra.imageconverter.image.tga.compression.CompressionType;
+import propra.imageconverter.image.tga.compression.writer.TGACompressionWriter;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
@@ -17,13 +19,15 @@ import java.util.Arrays;
 public final class TgaWriter implements ImageWriter {
     private final ReadWriteFile readWriteFile;
     private final LittleEndianOutputStream outputStream;
+    private final TGACompressionWriter compression;
 
     private TgaWriter(
             ReadWriteFile readWriteFile,
-            LittleEndianOutputStream outputStream
-    ) {
+            LittleEndianOutputStream outputStream,
+            TGACompressionWriter compression) {
         this.readWriteFile = readWriteFile;
         this.outputStream = outputStream;
+        this.compression = compression;
     }
 
     /**
@@ -32,13 +36,14 @@ public final class TgaWriter implements ImageWriter {
     public static TgaWriter create(
             ReadWriteFile readWriteFile,
             int width,
-            int height
+            int height,
+            CompressionType compressionType
     ) throws IOException {
         LittleEndianOutputStream outputStream = readWriteFile.outputStream(0);
 
         outputStream.writeUByte(0); // Länge der Bild-ID
         outputStream.writeUByte(0); // Palettentyp
-        outputStream.writeUByte(2); // Bildtyp, nur unterstützt 2 = RGB(24 oder 32 Bit) unkomprimiert
+        outputStream.writeUByte(compressionType.getTgaPictureType()); // Bildtyp, nur unterstützt 2 = RGB (24 Bit) unkomprimiert und 10 = RGB (24 Bit) RLE-komprimiert
         outputStream.writeFully(new byte[] { 0, 0, 0, 0, 0 }); // Palletenbeginn, Palettenlänge und Palettengröße immer 0, da keine Palette vorhanden
         outputStream.writeUShort(0); // X-Koordinate für Nullpunkt, siehe parse()
         outputStream.writeUShort(height); // Y-Koordinate für Nullpunkt
@@ -47,7 +52,11 @@ public final class TgaWriter implements ImageWriter {
         outputStream.writeUByte(24); // Bits pro Bildpunkt, nach Vorgabe immer 24
         outputStream.writeUByte(0b00100000); // Attribut-Byte, nach Vorgabe, siehe parse()
 
-        return new TgaWriter(readWriteFile, outputStream);
+        return new TgaWriter(
+                readWriteFile,
+                outputStream,
+                compressionType.getTgaCompressionWriter(width)
+        );
     }
 
     @Override
@@ -59,7 +68,7 @@ public final class TgaWriter implements ImageWriter {
 
         ArrayUtils.swap(pixelForWrite, 0, 2);
 
-        outputStream.writeFully(pixelForWrite);
+        compression.writeNextPixel(outputStream, pixelForWrite);
     }
 
     @Override
@@ -68,6 +77,7 @@ public final class TgaWriter implements ImageWriter {
         // ToDo: überprüfen, ob wirklich alle Daten für
         // ToDo: übergebene Breite und Höhe geschrieben wurde.
         // ToDo: Zunächst aber erstmal nicht, wegen YAGNI.
+        compression.flush(outputStream);
         readWriteFile.releaseOutputStream();
         readWriteFile.close();
     }
