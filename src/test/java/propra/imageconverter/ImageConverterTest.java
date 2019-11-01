@@ -34,16 +34,16 @@ class ImageConverterTest {
 
     static List<TestCase> successfulTestCases() {
         return List.of(
-                //                //       new TestCase("[Erfolgsfall] TGA -> Propra -> TGA: mit Metadaten", "tga_with_meta.tga", "tga_with_meta.propra"),
-                //                new TestCase("[KE1] [Erfolgsfall] TGA -> Propra -> TGA: mit 1 x 1 Pixel", "KE1_TestBilder", "tga_1pixel.tga", "tga_1pixel.propra"),
-                //                new TestCase("[KE1V] [Erfolgsfall] TGA -> Propra -> TGA: vorgegebener Testfall 1", "KE1_TestBilder", "test_01_uncompressed.tga", "test_01_uncompressed.propra"),
-                //                new TestCase("[KE1V] [Erfolgsfall] TGA -> Propra -> TGA: vorgegebener Testfall 2", "KE1_TestBilder", "test_02_uncompressed.tga", "test_02_uncompressed.propra"),
-                //                new TestCase("[KE1V] [Erfolgsfall] Propra -> TGA -> Propra: vorgegebener Testfall 3", "KE1_TestBilder", "test_03_uncompressed.propra", "test_03_uncompressed.tga"),
-                //                new TestCase("[KE1V] [Erfolgsfall] Propra -> TGA -> Propra: vorgegebener Testfall 4", "KE1_TestBilder", "test_04_uncompressed.propra", "test_04_uncompressed.tga"),
-                //                //     new TestCase("[KE1] [Erfolgsfall] TGA -> Propra -> TGA: besonders große Datei (> 200 MB)", "tga_grosse_datei.tga", "tga_grosse_datei.propra"),
+                //       new TestCase("[Erfolgsfall] TGA -> Propra -> TGA: mit Metadaten", "tga_with_meta.tga", "tga_with_meta.propra"),
+                new TestCase("[KE1] [Erfolgsfall] TGA -> Propra -> TGA: mit 1 x 1 Pixel", "KE1_TestBilder", "tga_1pixel.tga", "tga_1pixel.propra"),
+                new TestCase("[KE1V] [Erfolgsfall] TGA -> Propra -> TGA: vorgegebener Testfall 1", "KE1_TestBilder", "test_01_uncompressed.tga", "test_01_uncompressed.propra"),
+                new TestCase("[KE1V] [Erfolgsfall] TGA -> Propra -> TGA: vorgegebener Testfall 2", "KE1_TestBilder", "test_02_uncompressed.tga", "test_02_uncompressed.propra"),
+                new TestCase("[KE1V] [Erfolgsfall] Propra -> TGA -> Propra: vorgegebener Testfall 3", "KE1_TestBilder", "test_03_uncompressed.propra", "test_03_uncompressed.tga"),
+                new TestCase("[KE1V] [Erfolgsfall] Propra -> TGA -> Propra: vorgegebener Testfall 4", "KE1_TestBilder", "test_04_uncompressed.propra", "test_04_uncompressed.tga")
+                //   new TestCase("[KE1] [Erfolgsfall] TGA -> Propra -> TGA: besonders große Datei (> 200 MB)", "tga_grosse_datei.tga", "tga_grosse_datei.propra"),
 
-                //                new TestCase("[KE2] [Erfolgsfall] TGA (rle) -> Propra -> TGA: test_02_rle.tga", "KE2_TestBilder", "test_02_rle.tga", "test_02_rle.propra"),
-                //                new TestCase("[KE2] [Erfolgsfall] TGA (rle) -> TGA (rle): test_02_rle.tga", "KE2_TestBilder", "test_02_rle.tga", "test_02_rle.tga", "rle", "rle")
+                //           new TestCase("[KE2] [Erfolgsfall] TGA (rle) -> Propra -> TGA: test_02_rle.tga", "KE2_TestBilder", "test_02_rle.tga", "test_02_rle.propra"),
+                //           new TestCase("[KE2] [Erfolgsfall] TGA (rle) -> TGA (rle): test_02_rle.tga", "KE2_TestBilder", "test_02_rle.tga", "test_02_rle.tga", "rle", "rle")
         );
     }
 

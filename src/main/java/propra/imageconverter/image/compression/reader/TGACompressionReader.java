@@ -1,4 +1,4 @@
-package propra.imageconverter.image.tga.compression.reader;
+package propra.imageconverter.image.compression.reader;
 
 import propra.PropraException;
 import propra.imageconverter.binary.LittleEndianInputStream;

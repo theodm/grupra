@@ -4,7 +4,7 @@ import propra.PropraException;
 import propra.imageconverter.binary.LittleEndianInputStream;
 import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageReader;
-import propra.imageconverter.image.tga.compression.reader.TGACompressionReader;
+import propra.imageconverter.image.compression.reader.TGACompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;

@@ -1,9 +1,9 @@
-package propra.imageconverter.image.tga.compression;
+package propra.imageconverter.image.compression;
 
 import propra.PropraException;
-import propra.imageconverter.image.tga.compression.writer.NoCompressionWriter;
-import propra.imageconverter.image.tga.compression.writer.RLECompressionWriter;
-import propra.imageconverter.image.tga.compression.writer.TGACompressionWriter;
+import propra.imageconverter.image.compression.writer.CompressionWriter;
+import propra.imageconverter.image.compression.writer.NoCompressionWriter;
+import propra.imageconverter.image.compression.writer.RLECompressionWriter;
 
 public enum CompressionType {
 	NO_COMPRESSION,
@@ -33,7 +33,7 @@ public enum CompressionType {
 		throw new PropraException("Der Kompressionstyp " + this + " wird nicht unterstützt.");
 	}
 
-	public TGACompressionWriter getTgaCompressionWriter(
+	public CompressionWriter getTgaCompressionWriter(
 			int pictureWidth
 	) {
 		switch (this) {

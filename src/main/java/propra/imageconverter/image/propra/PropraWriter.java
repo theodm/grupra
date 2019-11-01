@@ -3,12 +3,16 @@ package propra.imageconverter.image.propra;
 import propra.imageconverter.binary.LittleEndianInputStream;
 import propra.imageconverter.binary.LittleEndianOutputStream;
 import propra.imageconverter.binary.ReadWriteFile;
+import propra.imageconverter.image.ImageReader;
 import propra.imageconverter.image.ImageWriter;
-import propra.imageconverter.util.ArrayUtils;
+import propra.imageconverter.image.compression.CompressionType;
+import propra.imageconverter.image.compression.iterator.PixelIterator;
+import propra.imageconverter.image.compression.iterator.PropraPixelIterator;
+import propra.imageconverter.image.compression.writer.CompressionWriter;
+import propra.imageconverter.image.compression.writer.NoCompressionWriter;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
 
@@ -22,35 +26,36 @@ import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
  * möglicherweise fehlerhaft.
  */
 public final class PropraWriter implements ImageWriter {
-    private final ReadWriteFile readWriteFile;
-    private final LittleEndianOutputStream outputStream;
-    private final BigInteger lengthOfContent;
+    private final CompressionType compressionType;
 
-    private PropraWriter(ReadWriteFile readWriteFile, LittleEndianOutputStream outputStream, BigInteger lengthOfContent) {
-        this.readWriteFile = readWriteFile;
-        this.outputStream = outputStream;
-        this.lengthOfContent = lengthOfContent;
+    public PropraWriter(CompressionType compressionType) {
+        this.compressionType = compressionType;
     }
 
-    /**
-     * Erstellt den PropraWriter mit den vorgegebenen Dimensionen.
-     */
     public static PropraWriter create(
-            ReadWriteFile readWriteFile,
-            int width,
-            int height
+            CompressionType compressionType
     ) throws IOException {
-        LittleEndianOutputStream outputStream = readWriteFile.outputStream(0);
+        return new PropraWriter(compressionType);
+    }
+
+    @Override public void write(
+            ImageReader imageReader,
+            ReadWriteFile outputFile
+    ) throws IOException {
+        CompressionWriter compression
+                = new NoCompressionWriter();
+
+        LittleEndianOutputStream outputStream = outputFile.outputStream(0);
 
         outputStream.writeFully(MAGIC_HEADER); // Formatkennung
-        outputStream.writeUShort(width); // Bildbreite
-        outputStream.writeUShort(height); // Bildhöhe
+        outputStream.writeUShort(imageReader.getWidth()); // Bildbreite
+        outputStream.writeUShort(imageReader.getHeight()); // Bildhöhe
         outputStream.writeUByte(24); // Bits pro Bildpunkt (=24)
         outputStream.writeUByte(0); // Kompressionstyp (0=unkomprimiert)
 
         BigInteger lengthOfContent = BigInteger.ONE
-                .multiply(BigInteger.valueOf(width))
-                .multiply(BigInteger.valueOf(height))
+                .multiply(BigInteger.valueOf(imageReader.getWidth()))
+                .multiply(BigInteger.valueOf(imageReader.getHeight()))
                 .multiply(BigInteger.valueOf(3));
 
         outputStream.writeULong(lengthOfContent); // Länge des Datensegments in Bytes (vorzeichenlos)
@@ -62,26 +67,12 @@ public final class PropraWriter implements ImageWriter {
 
         // Der FilePointer des darunterliegenden Ausgabestreams
         // befindet sich nun am Beginn des Datensegments
-        return new PropraWriter(readWriteFile, outputStream, lengthOfContent);
-    }
+        PixelIterator pixelIterator =
+                PropraPixelIterator.forImageReader(imageReader);
 
-    @Override
-    public void writeNextPixel(byte[] rgbPixel) throws IOException {
-        // Wir kopieren hier den übertragenen Pixel,
-        // damit wir das Byte-Array des Aufrufers nicht Ausversehen
-        // überscheiben (Defensive Programmierung)
-        byte[] pixelForWrite = Arrays.copyOf(rgbPixel, 3);
+        compression.write(pixelIterator, outputStream);
 
-        // Konvertierung von RGB in GBR
-        ArrayUtils.swap(pixelForWrite, 1, 2);
-        ArrayUtils.swap(pixelForWrite, 0, 2);
-
-        outputStream.writeFully(pixelForWrite);
-    }
-
-    @Override
-    public void close() throws Exception {
-        readWriteFile.releaseOutputStream();
+        outputFile.releaseOutputStream();
 
         // Alle Daten wurden geschrieben, daher müssen wir nun nochmal die
         // Prüfsumme berechnen und diese auch schreiben.
@@ -90,17 +81,17 @@ public final class PropraWriter implements ImageWriter {
         // an den Anfang des Datensegments
         // Und dann berechnen wir die Prüfsumme der
         // geschriebenen Daten
-        LittleEndianInputStream inputStream = readWriteFile.inputStream(PropraFileFormat.OFFSET_DATA);
+        LittleEndianInputStream inputStream = outputFile.inputStream(PropraFileFormat.OFFSET_DATA);
         long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::read);
-        readWriteFile.releaseInputStream();
+        outputFile.releaseInputStream();
 
         // Wir setzen den Cursor des darunterliegenden Ausgabestreams
         // an die Position der Prüfsumme
         // Wir schreiben die Prüfsumme und schließen den Ausgabestream
-        LittleEndianOutputStream outputStream = readWriteFile.outputStream(PropraFileFormat.OFFSET_CHECKSUM);
+        outputStream = outputFile.outputStream(PropraFileFormat.OFFSET_CHECKSUM);
         outputStream.writeUInt(checksum);
-        readWriteFile.releaseOutputStream();
+        outputFile.releaseOutputStream();
 
-        readWriteFile.close();
+        outputFile.close();
     }
 }

@@ -5,11 +5,11 @@ import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.cmd.CommandLineParser;
 import propra.imageconverter.image.ImageReader;
 import propra.imageconverter.image.ImageWriter;
+import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.propra.PropraReader;
 import propra.imageconverter.image.propra.PropraWriter;
 import propra.imageconverter.image.tga.TgaReader;
 import propra.imageconverter.image.tga.TgaWriter;
-import propra.imageconverter.image.tga.compression.CompressionType;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -53,22 +53,19 @@ public final class ImageConverter {
 
 	/**
 	 * Erstellt einen ImageWriter für das Format, welches anhand der
-	 * Dateiendung des übergebenen Pfads erkannt wurde.
+	 * Dateiendung des übergebenen Pfads erkannt wurde. TODO
 	 */
 	private static ImageWriter createImageWriterForFileName(
 			Path path,
-			ReadWriteFile readWriteFile,
-			int width,
-			int height,
 			CompressionType compressionType
 	) throws IOException {
 		String extension = calcFileExtension(path.getFileName().toString());
 
 		switch (extension) {
 			case "tga":
-				return TgaWriter.create(readWriteFile, width, height, compressionType);
+				return TgaWriter.create(compressionType);
 			case "propra":
-				return PropraWriter.create(readWriteFile, width, height);
+				return PropraWriter.create(compressionType);
 		}
 
 		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
@@ -139,24 +136,13 @@ public final class ImageConverter {
 					)
 			);
 
-			// Erstellt einen ImageWriter mit den Dimensionen der
-			// Eingabedatei und dem entsprechenden Kompressionstyp.
-			try (ImageWriter imageWriter = createImageWriterForFileName(
-					Paths.get(outputFilePath),
-					outputReadWriteFile,
-					imageReader.getWidth(),
-					imageReader.getHeight(),
-					parsedCompressionType
-			)) {
+			try (outputReadWriteFile) {
+				ImageWriter imageWriter = createImageWriterForFileName(
+						Paths.get(outputFilePath),
+						parsedCompressionType
+				);
 
-				// Pixelweise werden die Bilddaten von einer Datei
-				// in die andere kopiert. Das mag ineffizient erscheinen
-				// erfolgt aber intern gebuffert.
-				while (imageReader.hasNextPixel()) {
-					byte[] rgbPixel = imageReader.readNextPixel();
-
-					imageWriter.writeNextPixel(rgbPixel);
-				}
+				imageWriter.write(imageReader, outputReadWriteFile);
 			}
 		}
 	}
