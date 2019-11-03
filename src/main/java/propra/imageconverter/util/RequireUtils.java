@@ -2,14 +2,15 @@ package propra.imageconverter.util;
 
 import propra.PropraException;
 
-// ToDO: JAVADOC
-public class RequireUtils {
-    // ToDO: Alle Vorkommnisse hierauf leiten
+public final class RequireUtils {
+    private RequireUtils() {
+
+    }
 
     /**
      * Helferfunktion, gibt eine Exception aus, falls [condition] nicht erfüllt ist.
      */
-    private static void require(boolean condition, String message) {
+    public static void require(boolean condition, String message) {
         if (!condition)
             throw new PropraException(message);
     }

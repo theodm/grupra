@@ -5,13 +5,17 @@ import propra.imageconverter.binary.ReadWriteFile;
 import java.io.IOException;
 
 /**
- * Ermöglicht das pixelweise Schreiben
- * einer Bilddatei.
- * <p> TODO
+ * Ermöglicht das Schreiben einer
+ * Bilddatei in verschiedene Formate.
  */
 public interface ImageWriter {
-	void write(
-			ImageReader imageReader,
-			ReadWriteFile outputFile
-	) throws IOException;
+    /**
+     * Schreibt die Bilddaten aus dem übergebenen {@param imageReader} in
+     * die übergebene Datei {@param outputFile}. Die übergebene Datei muss durch
+     * den Aufrufer wieder geschlossen werden.
+     */
+    void write(
+            ImageReader imageReader,
+            ReadWriteFile outputFile
+    ) throws IOException;
 }

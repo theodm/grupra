@@ -9,7 +9,6 @@ import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
 import propra.imageconverter.image.compression.iterator.PropraPixelIterator;
 import propra.imageconverter.image.compression.writer.CompressionWriter;
-import propra.imageconverter.image.compression.writer.NoCompressionWriter;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -17,24 +16,21 @@ import java.math.BigInteger;
 import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
 
 /**
- * Der PropraReader ermöglicht das pixelweise Schreibenb einer
- * Propra-Datei.
- * <p>
- * Der Benutzer ist angehalten die Instanz der Klasse nach
- * der Nutzung wieder zu schließen. Wird die Instanz nicht
- * geschlossen ist das Ergebnis undefiniert und die generierte Datei
- * möglicherweise fehlerhaft.
+ * Der PropraReader ermöglicht das Schreiben einer Propra-Datei
  */
 public final class PropraWriter implements ImageWriter {
     private final CompressionType compressionType;
 
-    public PropraWriter(CompressionType compressionType) {
+    private PropraWriter(CompressionType compressionType) {
         this.compressionType = compressionType;
     }
 
+    /**
+     * Erstellt einen PropraWriter mit dem angegebenen Kompressionstyp.
+     */
     public static PropraWriter create(
             CompressionType compressionType
-    ) throws IOException {
+    ) {
         return new PropraWriter(compressionType);
     }
 
@@ -43,7 +39,7 @@ public final class PropraWriter implements ImageWriter {
             ReadWriteFile outputFile
     ) throws IOException {
         CompressionWriter compression
-                = new NoCompressionWriter();
+                = compressionType.getCompressionWriter();
 
         LittleEndianOutputStream outputStream = outputFile.outputStream(0);
 
@@ -51,14 +47,12 @@ public final class PropraWriter implements ImageWriter {
         outputStream.writeUShort(imageReader.getWidth()); // Bildbreite
         outputStream.writeUShort(imageReader.getHeight()); // Bildhöhe
         outputStream.writeUByte(24); // Bits pro Bildpunkt (=24)
-        outputStream.writeUByte(0); // Kompressionstyp (0=unkomprimiert)
+        outputStream.writeUByte(compressionType.getPropraCompressionType()); // Kompressionstyp (0=unkomprimiert)
 
-        BigInteger lengthOfContent = BigInteger.ONE
-                .multiply(BigInteger.valueOf(imageReader.getWidth()))
-                .multiply(BigInteger.valueOf(imageReader.getHeight()))
-                .multiply(BigInteger.valueOf(3));
-
-        outputStream.writeULong(lengthOfContent); // Länge des Datensegments in Bytes (vorzeichenlos)
+        // Wir kennen die Datenlänge noch nicht,
+        // da die Kompression aktiv sein könnte,
+        // daher setzen wir sie zuerst auf 0
+        outputStream.writeULong(BigInteger.ZERO); // Länge des Datensegments in Bytes (vorzeichenlos)
 
         // Wir wissen die Prüfsumme zu diesem Zeitpunkt noch nicht,
         // wir schreiben zuerst alle Daten und berechnen die Prüfsumme dann.
@@ -70,25 +64,25 @@ public final class PropraWriter implements ImageWriter {
         PixelIterator pixelIterator =
                 PropraPixelIterator.forImageReader(imageReader);
 
-        compression.write(pixelIterator, outputStream);
+        long lengthOfContent = compression.write(pixelIterator, outputStream);
 
         outputFile.releaseOutputStream();
 
         // Alle Daten wurden geschrieben, daher müssen wir nun nochmal die
-        // Prüfsumme berechnen und diese auch schreiben.
-
+        // Prüfsumme berechnen.
         // Wir setzenden FilePointer des darunterliegenden Ausgabestreams
         // an den Anfang des Datensegments
         // Und dann berechnen wir die Prüfsumme der
         // geschriebenen Daten
         LittleEndianInputStream inputStream = outputFile.inputStream(PropraFileFormat.OFFSET_DATA);
-        long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::read);
+        long checksum = Checksum.calcStreamingChecksum(BigInteger.valueOf(lengthOfContent), inputStream::read);
         outputFile.releaseInputStream();
 
         // Wir setzen den Cursor des darunterliegenden Ausgabestreams
-        // an die Position der Prüfsumme
-        // Wir schreiben die Prüfsumme und schließen den Ausgabestream
-        outputStream = outputFile.outputStream(PropraFileFormat.OFFSET_CHECKSUM);
+        // an die Position der Datensegmentlänge.
+        // Wir schreiben die Datensegmentlänge und die Prüfsumme und schließen den Ausgabestream
+        outputStream = outputFile.outputStream(PropraFileFormat.OFFSET_DATA_SEGMENT_LENGTH);
+        outputStream.writeULong(BigInteger.valueOf(lengthOfContent));
         outputStream.writeUInt(checksum);
         outputFile.releaseOutputStream();
 

@@ -4,6 +4,7 @@ import propra.PropraException;
 import propra.imageconverter.binary.LittleEndianInputStream;
 import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageReader;
+import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
@@ -24,7 +25,8 @@ public final class PropraReader implements ImageReader {
     private final LittleEndianInputStream inputStream;
     private final int width;
     private final int height;
-    private final BigInteger lengthOfContent;
+    private final BigInteger numberOfPixels;
+    private final CompressionReader compression;
 
     /**
      * Die aktuelle Position des Pixel-Zeigers.
@@ -36,13 +38,14 @@ public final class PropraReader implements ImageReader {
             LittleEndianInputStream inputStream,
             int width,
             int height,
-            BigInteger lengthOfContent
-    ) {
+            BigInteger numberOfPixels,
+            CompressionReader compression) {
         this.readWriteFile = readWriteFile;
         this.inputStream = inputStream;
         this.width = width;
         this.height = height;
-        this.lengthOfContent = lengthOfContent;
+        this.numberOfPixels = numberOfPixels;
+        this.compression = compression;
     }
 
     /**
@@ -81,16 +84,10 @@ public final class PropraReader implements ImageReader {
 
         // Kompressionstyp
         int compressionType = inputStream.readUByte();
-        require(compressionType == 0, "Es wird für Propa-Dateien nur der Kompressionstyp 0 unterstützt. Angeben wurde der Kompressionstyp " + compressionType + ".");
+        require(compressionType == 0 || compressionType == 1, "Es wird für Propa-Dateien nur der Kompressionstyp 0 und 1 unterstützt. Angeben wurde der Kompressionstyp " + compressionType + ".");
 
-        // Länge der Bilddaten
+        // Länge des Bilddatensegments
         BigInteger lengthOfContent = inputStream.readULong();
-        BigInteger lengthOfContentPerWidthAndHeight = BigInteger.ONE
-                .multiply(BigInteger.valueOf(width))
-                .multiply(BigInteger.valueOf(height))
-                .multiply(BigInteger.valueOf(3));
-
-        require(lengthOfContentPerWidthAndHeight.compareTo(lengthOfContent) == 0, "Die Länge der Daten muss 3 * Bildbreite * Bildhöhe entsprchen.");
 
         // Prüfsumme
         long checksum = inputStream.readUInt();
@@ -115,7 +112,13 @@ public final class PropraReader implements ImageReader {
         readWriteFile.releaseInputStream();
         inputStream = readWriteFile.inputStream(PropraFileFormat.OFFSET_DATA);
 
-        return new PropraReader(readWriteFile, inputStream, width, height, lengthOfContent);
+        // Anzahl der Bildpunkte
+        BigInteger numberOfPixels = BigInteger.ONE
+                .multiply(BigInteger.valueOf(width))
+                .multiply(BigInteger.valueOf(height))
+                .multiply(BigInteger.valueOf(3));
+
+        return new PropraReader(readWriteFile, inputStream, width, height, numberOfPixels, CompressionReader.fromPropraCompressionType(compressionType));
     }
 
     @Override
@@ -130,9 +133,7 @@ public final class PropraReader implements ImageReader {
 
     @Override
     public byte[] readNextPixel() throws IOException {
-        byte[] nextPixel = new byte[3];
-
-        inputStream.readFully(nextPixel);
+        byte[] nextPixel = compression.readNextPixel(inputStream);
 
         // Das Propra-Format speichert die Pixel im GBR-Format
         // wir wollen unseren Benutzern aber die Daten komfortabel
@@ -147,7 +148,7 @@ public final class PropraReader implements ImageReader {
 
     @Override
     public boolean hasNextPixel() {
-        return currentPosInContent.compareTo(lengthOfContent) < 0;
+        return currentPosInContent.compareTo(numberOfPixels) < 0;
     }
 
     @Override

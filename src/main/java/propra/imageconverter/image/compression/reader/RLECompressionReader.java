@@ -5,7 +5,11 @@ import propra.imageconverter.binary.LittleEndianInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class RLECompressionReader implements TGACompressionReader {
+/**
+ * Implementiert einen CompressionReader für
+ * RLE-komprimierte Daten.
+ */
+public class RLECompressionReader implements CompressionReader {
     // Speichert die verbleibenden unkomprimierten Bildpunkte bis zum
     // nächsten Steuerbyte; falls > 0 befindet sich der Reader im Datenmodus
     private int remainingNonRepeatedPixels = 0;
@@ -17,7 +21,7 @@ public class RLECompressionReader implements TGACompressionReader {
     // Speichert im Fall, dass sich der Reader
     // im Wiederholungsmodus befindet, den wiederholten
     // Bildpunkt.
-    private byte[] repeatedPixel = new byte[3];
+    private final byte[] repeatedPixel = new byte[3];
 
     @Override
     public byte[] readNextPixel(

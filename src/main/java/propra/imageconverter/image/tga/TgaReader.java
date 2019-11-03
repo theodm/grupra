@@ -1,14 +1,15 @@
 package propra.imageconverter.image.tga;
 
-import propra.PropraException;
 import propra.imageconverter.binary.LittleEndianInputStream;
 import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageReader;
-import propra.imageconverter.image.compression.reader.TGACompressionReader;
+import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
+
+import static propra.imageconverter.util.RequireUtils.require;
 
 /**
  * Ermöglicht das pixelweise Einlesen einer TGA-Datei.
@@ -20,8 +21,8 @@ public final class TgaReader implements ImageReader {
     private final LittleEndianInputStream inputStream;
     private final int width;
     private final int height;
-    private final BigInteger lengthOfContent;
-    private final TGACompressionReader compression;
+    private final BigInteger numberOfPixels;
+    private final CompressionReader compression;
 
     /**
      * Aktuelle Leseposition des Datensegments in Bytes.
@@ -33,13 +34,13 @@ public final class TgaReader implements ImageReader {
             LittleEndianInputStream inputStream,
             int width,
             int height,
-            BigInteger lengthOfContent,
-            TGACompressionReader compression) {
+            BigInteger numberOfPixels,
+            CompressionReader compression) {
         this.readWriteFile = readWriteFile;
         this.inputStream = inputStream;
         this.width = width;
         this.height = height;
-        this.lengthOfContent = lengthOfContent;
+        this.numberOfPixels = numberOfPixels;
         this.compression = compression;
     }
 
@@ -94,23 +95,15 @@ public final class TgaReader implements ImageReader {
 
         // Nach Vorgabe besteht keine Bild-ID und Farbpalette
 
-        BigInteger lengthOfContent = BigInteger.ONE
+        BigInteger numberOfPixels = BigInteger.ONE
                 .multiply(BigInteger.valueOf(width))
                 .multiply(BigInteger.valueOf(height))
                 .multiply(BigInteger.valueOf(3));
 
-        TGACompressionReader compression =
-                TGACompressionReader.fromPictureType(pictureType);
+        CompressionReader compression =
+                CompressionReader.fromTGAPictureType(pictureType);
 
-        return new TgaReader(readWriteFile, dataInput, width, height, lengthOfContent, compression);
-    }
-
-    /**
-     * Helferfunktion, gibt eine Exception aus, falls [condition] nicht erfüllt ist.
-     */
-    private static void require(boolean condition, String message) {
-        if (!condition)
-            throw new PropraException(message);
+        return new TgaReader(readWriteFile, dataInput, width, height, numberOfPixels, compression);
     }
 
     @Override
@@ -140,7 +133,7 @@ public final class TgaReader implements ImageReader {
 
     @Override
     public boolean hasNextPixel() {
-        return currentPosInContent.compareTo(lengthOfContent) < 0;
+        return currentPosInContent.compareTo(numberOfPixels) < 0;
     }
 
     @Override

@@ -18,23 +18,33 @@ public final class CommandLineParser {
 
     /**
      * Konvertiert ein einzelnes Argument zu einem Paar aus
-     * Attribut und Wert.
+     * Attribut und Wert der Form --XXX=YYY oder --XXX
      * <p>
      * Beispiel:
      * Eingabe: "--input=C:\HalloWelt.txt"
      * Ausgabe: ["input", "C:\HalloWelt.txt"]
      */
     private static String[] parseSingleArgument(String arg) {
-        String[] splitted = arg.split("=");
+        if (!arg.contains("=")) {
+            if (!arg.startsWith("--"))
+                throw new PropraException("Das Argument '" + arg + "' ist nicht wohlgeformt. Erwartet ist ein Argument der Form '--XXX=YYY' oder der Form '--XXX'.");
 
-        if (splitted.length != 2
-                || !splitted[0].startsWith("--")) {
-            throw new PropraException("Das Argument '" + arg + "' ist nicht wohlgeformt. Erwartet ist ein Argument der Form '--XXX=YYY'.");
+            return new String[]{
+                    arg.substring(2),
+                    ""
+            };
+        }
+
+        String paramName = arg.substring(0, arg.indexOf('='));
+        String paramValue = arg.substring(arg.indexOf('=') + 1);
+
+        if (!paramName.startsWith("--")) {
+            throw new PropraException("Das Argument '" + arg + "' ist nicht wohlgeformt. Erwartet ist ein Argument der Form '--XXX=YYY' oder der Form '--XXX'.");
         }
 
         return new String[]{
-                splitted[0].substring(2),
-                splitted[1]
+                paramName.substring(2),
+                paramValue
         };
     }
 
@@ -43,10 +53,11 @@ public final class CommandLineParser {
      * eine Map, die das Attribut auf den zugewiesen Wert mappt.
      * <p>
      * Beispiel:
-     * Eingabe: ["--input=C:\HalloWelt.txt", "--output=C:\ByeWorld.bmp"]
+     * Eingabe: ["--input=C:\HalloWelt.txt", "--output=C:\ByeWorld.bmp", "--test"]
      * Ausgabe: {
      * "input": "C:\HalloWelt.txt",
-     * "output": "C:\ByeWorld.bmp"
+     * "output": "C:\ByeWorld.bmp",
+     * "test": ""
      * }
      */
     public static Map<String, String> parse(String[] args) {

@@ -15,6 +15,12 @@ final class PropraFileFormat {
 
     /**
      * Der Offset vom Beginn einer Propra-Datei
+     * bis zum Beginn der Länge des Datensegments.
+     */
+    final static long OFFSET_DATA_SEGMENT_LENGTH = MAGIC_HEADER.length + 2 + 2 + 1 + 1;
+
+    /**
+     * Der Offset vom Beginn einer Propra-Datei
      * bis zum Beginn der Prüfsumme
      */
     final static long OFFSET_CHECKSUM = MAGIC_HEADER.length + 2 + 2 + 1 + 1 + 8;

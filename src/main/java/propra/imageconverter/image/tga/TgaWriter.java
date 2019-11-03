@@ -12,10 +12,7 @@ import propra.imageconverter.image.compression.writer.CompressionWriter;
 import java.io.IOException;
 
 /**
- * Ermöglicht das pixelweise Schreiben einer TGA-Datei.
- * <p>
- * Der Benutzer ist angehalten, die Instanz nach dem Schreiben
- * wieder zu schließen.
+ * Ermöglicht das Schreiben einer TGA-Datei.
  */
 public final class TgaWriter implements ImageWriter {
 	private final CompressionType compressionType;
@@ -24,9 +21,12 @@ public final class TgaWriter implements ImageWriter {
 		this.compressionType = compressionType;
     }
 
-    public static TgaWriter create(
+	/**
+	 * Erstellt einen TgaWriter mit dem bestimmten Kompressionstyp.
+	 */
+	public static TgaWriter create(
             CompressionType compressionType
-    ) throws IOException {
+	) {
 		return new TgaWriter(compressionType);
 	}
 
@@ -37,7 +37,7 @@ public final class TgaWriter implements ImageWriter {
 		LittleEndianOutputStream outputStream = outputFile.outputStream(0);
 
 		CompressionWriter compressionWriter
-				= compressionType.getTgaCompressionWriter(imageReader.getWidth());
+				= compressionType.getCompressionWriter();
 
         outputStream.writeUByte(0); // Länge der Bild-ID
         outputStream.writeUByte(0); // Palettentyp
@@ -56,6 +56,5 @@ public final class TgaWriter implements ImageWriter {
 		compressionWriter.write(pixelIterator, outputStream);
 
 		outputFile.releaseOutputStream();
-		outputFile.close();
     }
 }

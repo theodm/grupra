@@ -5,9 +5,18 @@ import propra.imageconverter.image.compression.iterator.PixelIterator;
 
 import java.io.IOException;
 
+/**
+ * Ermöglicht das Schreiben von Bilddaten mit
+ * verschiedenen Kompressionstypen
+ */
 public interface CompressionWriter {
-	public void write(
-			PixelIterator pixelData,
-			LittleEndianOutputStream outputStream
-	) throws IOException;
+    /**
+     * Schreibt die Bilddaten, die aus dem Iterator {@param pixelData} kommen
+     * mit der entsprechenden Komprimierung in den übergebenen {@param outputStream}.
+     * Gibt die Anzahl an Bytes zurück, die geschrieben wurden.
+     */
+    long write(
+            PixelIterator pixelData,
+            LittleEndianOutputStream outputStream
+    ) throws IOException;
 }

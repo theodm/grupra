@@ -4,7 +4,11 @@ import propra.imageconverter.binary.LittleEndianInputStream;
 
 import java.io.IOException;
 
-public class NoCompressionReader implements TGACompressionReader {
+/**
+ * Implementiert einen CompressionReader für
+ * unkomprimierte Daten.
+ */
+public class NoCompressionReader implements CompressionReader {
     @Override
     public byte[] readNextPixel(LittleEndianInputStream inputStream) throws IOException {
         // Ohne Kompression müssen wir einfach nur

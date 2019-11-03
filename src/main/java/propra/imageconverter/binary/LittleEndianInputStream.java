@@ -96,7 +96,7 @@ public class LittleEndianInputStream implements AutoCloseable {
     }
 
     /**
-     * Überspringt die nächsten [n] Bytes des darunterliegenden Eingabestream.
+     * Überspringt die nächsten {@param n} Bytes des darunterliegenden Eingabestream.
      * <p>
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */
@@ -108,7 +108,7 @@ public class LittleEndianInputStream implements AutoCloseable {
     }
 
     /**
-     * Liest die nächsten [n] Bytes des darunterliegenden Eingabestreams in das [targetArray].
+     * Liest die nächsten n Bytes des darunterliegenden Eingabestreams in das {@param targetArray}.
      * <p>
      * Wirft eine Exception, falls das Ende der Datei erreicht wird.
      */

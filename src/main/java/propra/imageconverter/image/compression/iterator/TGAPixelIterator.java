@@ -6,7 +6,7 @@ import propra.imageconverter.util.ArrayUtils;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class TGAPixelIterator extends PeekAndConvertPixelIterator {
+public final class TGAPixelIterator extends PeekAndConvertPixelIterator {
 	private TGAPixelIterator(ImageReader imageReader) throws IOException {
 		super(imageReader);
 	}

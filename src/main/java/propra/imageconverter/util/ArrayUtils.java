@@ -15,10 +15,20 @@ public final class ArrayUtils {
         byteArray[index2] = temp;
     }
 
+    public static String debugFormat(byte[] byteArray) {
+        StringBuilder result = new StringBuilder();
+
+        for (byte b : byteArray) {
+            result.append(String.format("%02X", b));
+        }
+
+        return result.toString();
+    }
+
     public static String formatRGBPixelOrNull(byte[] rgb) {
         if (rgb == null)
             return "<null>";
 
-        return String.format("#%X%X%X", rgb[0], rgb[1], rgb[2]);
+        return String.format("#%02X%02X%02X", rgb[0], rgb[1], rgb[2]);
     }
 }

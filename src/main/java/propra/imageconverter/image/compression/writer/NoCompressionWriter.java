@@ -5,13 +5,23 @@ import propra.imageconverter.image.compression.iterator.PixelIterator;
 
 import java.io.IOException;
 
+/**
+ * Implementiert einen CompressionWriter ohne
+ * Komprimierung.
+ */
 public class NoCompressionWriter implements CompressionWriter {
-	@Override public void write(
+	@Override
+	public long write(
 			PixelIterator pixelData,
 			LittleEndianOutputStream outputStream
 	) throws IOException {
+		long numberOfDataWritten = 0;
+
 		while (pixelData.hasNextPixel()) {
 			outputStream.writeFully(pixelData.readNextPixel());
+			numberOfDataWritten += 3;
 		}
+
+		return numberOfDataWritten;
 	}
 }

@@ -6,7 +6,7 @@ import propra.imageconverter.util.ArrayUtils;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class PropraPixelIterator extends PeekAndConvertPixelIterator {
+public final class PropraPixelIterator extends PeekAndConvertPixelIterator {
 	private PropraPixelIterator(ImageReader imageReader) throws IOException {
 		super(imageReader);
 	}

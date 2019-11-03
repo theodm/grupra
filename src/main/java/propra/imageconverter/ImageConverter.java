@@ -1,179 +1,214 @@
 package propra.imageconverter;
 
 import propra.PropraException;
-import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.cmd.CommandLineParser;
-import propra.imageconverter.image.ImageReader;
-import propra.imageconverter.image.ImageWriter;
 import propra.imageconverter.image.compression.CompressionType;
-import propra.imageconverter.image.propra.PropraReader;
-import propra.imageconverter.image.propra.PropraWriter;
-import propra.imageconverter.image.tga.TgaReader;
-import propra.imageconverter.image.tga.TgaWriter;
+import propra.imageconverter.util.PathUtils;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class ImageConverter {
-	private ImageConverter() {
+    private ImageConverter() {
 
-	}
+    }
 
-	/**
-	 * Gibt zu einem Dateinamen ohne Pfad die
-	 * Dateiendung zurück.
-	 */
-	private static String calcFileExtension(String fileName) {
-		String[] fileNameParts = fileName.split("\\.");
+    /**
+     * Überprüft, ob die erforderlichen Argumente für die Aktion
+     * übergeben wurde und gibt eine Fehlermeldung aus, falls zusätzliche
+     * Parameter aus.
+     *
+     * @param action       Die aktuell ausgeführte Aktion.
+     * @param neededArgs   Die erforderlichen Argumente für diese Aktion
+     * @param optionalArgs Die optionalen Argumente für diese Aktion.
+     * @param parsedArgs   Alle geparsten Argumente.
+     */
+    public static void neededCheck(
+            String action,
+            Set<String> neededArgs,
+            Set<String> optionalArgs,
+            Map<String, String> parsedArgs
+    ) {
+        for (String arg : neededArgs) {
+            if (!parsedArgs.containsKey(arg)) {
+                throw new PropraException("Es wurden nicht alle erforderlichen Argumente für die Aufgabe " + action + " übergeben. Erforderlich sind die Parameter " + String.join(", ", neededArgs) + ".");
+            }
+        }
 
-		assert fileNameParts.length == 2;
+        Set<String> incompatibleParams = parsedArgs
+                .keySet()
+                .stream()
+                .filter(it -> !neededArgs.contains(it) && !optionalArgs.contains(it))
+                .collect(Collectors.toSet());
 
-		return fileNameParts[1].toLowerCase();
-	}
+        if (incompatibleParams.size() > 0) {
+            throw new PropraException("Es wurden für die Aktion " + action + " inkompatible Parameter übergeben. Diese Parameter sind " + String.join(", ", incompatibleParams) + " .");
+        }
+    }
 
-	/**
-	 * Erstellt einen ImageReader für das Format, welches anhand der
-	 * Dateiendung des übergebenen Pfads erkannt wurde.
-	 */
-	private static ImageReader createImageReaderForFileName(Path path, ReadWriteFile readWriteFile) throws IOException {
-		String extension = calcFileExtension(path.getFileName().toString());
+    /**
+     * Convenience für den neededCheck ohne
+     * optionale Argumente.
+     */
+    public static void neededCheck(
+            String action,
+            Set<String> neededArgs,
+            Map<String, String> parsedArgs
+    ) {
+        neededCheck(action, neededArgs, Collections.emptySet(), parsedArgs);
+    }
 
-		switch (extension) {
-			case "tga":
-				return TgaReader.create(readWriteFile);
-			case "propra":
-				return PropraReader.create(readWriteFile);
-		}
+    /**
+     * Gibt zu einem Dateipfad, den Dateipfad zurück,
+     * der entsteht, wenn man die Dateiendung {@param removeExtension} weglässt.
+     * <p>
+     * Hat der Dateipfad diese Dateiendung nicht, wird
+     * eine Exception geworfen.
+     */
+    public static Path removeExtensionIfThere(
+            Path file,
+            String removeExtension
+    ) {
+        String currentFileName = file.getFileName().toString();
+        String currentExtension = PathUtils.calcFileExtension(currentFileName);
+        if (!currentExtension.equals(removeExtension)) {
+            throw new PropraException("Die Datei " + file + " hat nicht die benötigte Dateiendung ." + removeExtension + ".");
+        }
 
-		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
-	}
+        return file.getParent().resolve(currentFileName.substring(0, currentFileName.length() - removeExtension.length() - 1));
+    }
 
-	/**
-	 * Erstellt einen ImageWriter für das Format, welches anhand der
-	 * Dateiendung des übergebenen Pfads erkannt wurde. TODO
-	 */
-	private static ImageWriter createImageWriterForFileName(
-			Path path,
-			CompressionType compressionType
-	) throws IOException {
-		String extension = calcFileExtension(path.getFileName().toString());
+    /**
+     * Gibt zu einem Dateipfad, den Dateipfad zurück,
+     * der entsteht, wenn man die Dateiendung {@param newExtension} hinzufügt.
+     */
+    public static Path appendExtension(
+            Path file,
+            String newExtension
+    ) {
+        return file
+                .getParent()
+                .resolve(file.getFileName() + "." + newExtension);
+    }
 
-		switch (extension) {
-			case "tga":
-				return TgaWriter.create(compressionType);
-			case "propra":
-				return PropraWriter.create(compressionType);
-		}
+    /**
+     * Führt die Konvertierung enstprechend der Vorgaben aus.
+     *
+     * @param args Die Argumente für die Kommandozeile. Entsprechend der Anforderungen gibt
+     *             es die folgenden Parameter.
+     *             <p>
+     *             --input Eingabepfad für das zu konvertierende Bild im TGA-Format.
+     *             --output Ausgabepfad für das konvertierte Bild im ProPra-Format.
+     *             <p>
+     *             Beispiel: --input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga
+     */
+    public static void startWithArgs(String[] args) throws Exception {
+        String base32Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
 
-		throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
-	}
+        Map<String, String> parsedArgs
+                = CommandLineParser.parse(args);
 
-	/**
-	 * Führt die Konvertierung enstprechend der Vorgaben aus.
-	 *
-	 * @param args Die Argumente für die Kommandozeile. Entsprechend der Anforderungen gibt
-	 *             es die folgenden Parameter.
-	 *             <p>
-	 *             --input Eingabepfad für das zu konvertierende Bild im TGA-Format.
-	 *             --output Ausgabepfad für das konvertierte Bild im ProPra-Format.
-	 *             <p>
-	 *             Beispiel: --input=./src/main/resources/KE1_TestBilder/test_01_uncompressed.tga --output=test.tga
-	 */
-	public static void startWithArgs(String[] args) throws Exception {
-		// Diese Implementierung des Bildkonvertierers hat auch das Ziel große Bilddateien
-		// zu unterstützen. Siehe dazu auch die Diskussion im Moodle-Diskussionsforum unter
-		// https://moodle-wrm.fernuni-hagen.de/mod/forum/discuss.php?d=23707.
-		//
-		// Die Bilddaten werden deshalb niemals im Arbeitsspeicher gehalten und innerhalb der
-		// Lese- und Schreibroutinen ist es notwendig, innerhalb der Datei den Lesecursor vor- und zurückzubewegen.
-		// Die Dateien können also nicht mehr in einem Durchlauf geschrieben und gelesen werden. Das macht den
-		// Code gegenüber einer In-Memory-Implementierung deutlich komplexer.
-		//
-		// Die Daten werden pixelweise übertragen, das wäre grds. ineffizient, sollte hier aber ohne Bedeutung sein,
-		// da die Daten in einem Buffer zwischengespeichert wurde (mittels BufferedInputStream und BufferedOutputStream).
-		//
-		// Auch werden die Daten redundant mehrfach gelesen und die Prüfsumme redundant mehrfach berechnet. Dies
-		// ist nicht geschwindigkeitseffizient, macht den Code aber deutlich einfacher und lesbarer. Das Programm
-		// ist im Wesentlichen also auf Speichereffizienz und Verständlichkeit des Programmcodes optimiert.
-		Map<String, String> parsedArgs
-				= CommandLineParser.parse(args);
+        if (parsedArgs.containsKey("encode-base-32")) {
+            neededCheck("encode-base-32", Set.of("encode-base-32", "input"), parsedArgs);
 
-		String inputFilePath = parsedArgs.get("input");
-		String outputFilePath = parsedArgs.get("output");
-		// Um die Abwärtskompatiblität zu KE1 zu gewährleisten,
-		// wird für compression als Default-Wert uncompressed genutzt
-		String compression = parsedArgs.getOrDefault("compression", "uncompressed");
+            Path input = Paths.get(parsedArgs.get("input"));
+            Path output = appendExtension(input, "base-32");
 
-		if (inputFilePath == null
-				|| outputFilePath == null) {
-			throw new PropraException("Es wurden kein Eingabepfad (--input) oder kein Ausgabepfad (--output) angegeben. Beide sind erfoderlich.");
-		}
+            EnDecoder.encode(
+                    input,
+                    output,
+                    base32Alphabet,
+                    false
+            );
 
-		CompressionType parsedCompressionType
-				= CompressionType.parseCommandLineArgument(compression);
+        } else if (parsedArgs.containsKey("encode-base-n")) {
+            neededCheck("encode-base-n", Set.of("encode-base-n", "input"), parsedArgs);
 
-		// Öffnet die Eingabedatei zum Lesen.
-		// Wird implizit durch das Schließen des ImageReader geschlossen.
-		ReadWriteFile inputReadWriteFile =
-				new ReadWriteFile(
-						new RandomAccessFile(
-								Paths.get(inputFilePath).toFile(), "r"
-						)
-				);
+            Path input = Paths.get(parsedArgs.get("input"));
+            Path output = appendExtension(input, "base-n");
+            String alphabet = parsedArgs.get("encode-base-n");
 
-		try (ImageReader imageReader = createImageReaderForFileName(
-				Paths.get(inputFilePath),
-				inputReadWriteFile
-		)) {
-			// Öffnet die Ausgabedatei zum Lesen und zum Schreiben
-			// Wird implizit durch das Schließen des ImageWriter geschlossen.
-			ReadWriteFile outputReadWriteFile = new ReadWriteFile(
-					new RandomAccessFile(
-							Paths.get(outputFilePath).toFile(), "rw"
-					)
-			);
+            EnDecoder.encode(
+                    input,
+                    output,
+                    alphabet,
+                    true
+            );
 
-			try (outputReadWriteFile) {
-				ImageWriter imageWriter = createImageWriterForFileName(
-						Paths.get(outputFilePath),
-						parsedCompressionType
-				);
+        } else if (parsedArgs.containsKey("decode-base-32")) {
+            neededCheck("decode-base-32", Set.of("decode-base-32", "input"), parsedArgs);
 
-				imageWriter.write(imageReader, outputReadWriteFile);
-			}
-		}
-	}
+            Path input = Paths.get(parsedArgs.get("input"));
+            Path output = removeExtensionIfThere(input, "base-32");
 
-	/**
-	 * Einstiegspunkt für das Programm entsprechend der Vorgaben.
-	 */
-	public static void main(
-			String[] args
-	) {
-		try {
-			// Die Main-Methode delegiert nur an
-			// die Methode startWithArgs, die die Konvertierung
-			// durchführt. Da System.exit(...) ausgeführt wird kann die
-			// echte Main-Methode nicht durch JUnit ausgeführt werden,
-			// da der JUnit-Runner auch beendet würde.
-			startWithArgs(args);
-		} catch (Exception exception) {
-			// Wir fangen hier  alle Exceptions
-			// damit sind auch alle Runtime-Exceptions
-			// und insbesondere die PropraExceptions berücksichtigt.
+            EnDecoder.decode(
+                    input,
+                    output,
+                    base32Alphabet
+            );
 
-			exception.printStackTrace();
+        } else if (parsedArgs.containsKey("decode-base-n")) {
+            neededCheck("decode-base-n", Set.of("decode-base-n", "input"), parsedArgs);
+
+            Path input = Paths.get(parsedArgs.get("input"));
+            Path output = removeExtensionIfThere(input, "base-n");
+
+            EnDecoder.decode(
+                    input,
+                    output,
+                    null
+            );
+        } else {
+            neededCheck("convert", Set.of("input", "output"), Set.of("compression"), parsedArgs);
+
+            // Um die Abwärtskompatiblität zu KE1 zu gewährleisten,
+            // wird für compression als Default-Wert uncompressed genutzt
+            String compression = parsedArgs.getOrDefault("compression", "uncompressed");
+            String input = parsedArgs.get("input");
+            String output = parsedArgs.get("output");
+
+            CompressionType parsedCompressionType
+                    = CompressionType.parseCommandLineArgument(compression);
+
+            Converter.convert(
+                    Paths.get(input),
+                    Paths.get(output),
+                    parsedCompressionType
+            );
+        }
+    }
+
+    /**
+     * Einstiegspunkt für das Programm entsprechend der Vorgaben.
+     */
+    public static void main(
+            String[] args
+    ) {
+        try {
+            // Die Main-Methode delegiert nur an
+            // die Methode startWithArgs, die die Konvertierung
+            // durchführt. Da System.exit(...) ausgeführt wird kann die
+            // echte Main-Methode nicht durch JUnit ausgeführt werden,
+            // da der JUnit-Runner auch beendet würde.
+            startWithArgs(args);
+        } catch (Exception exception) {
+            // Wir fangen hier  alle Exceptions
+            // damit sind auch alle Runtime-Exceptions
+            // und insbesondere die PropraExceptions berücksichtigt.
+
+            exception.printStackTrace();
             System.err.println("Es ist eine " + exception.getClass().getSimpleName() + " aufgetreten.");
             System.err.println("Folgende Nachricht enthält die Exception: " + (exception.getMessage() != null ? exception.getMessage() : "[Keine Nachricht]"));
 
-			// Fehlerstatuscode zurückgeben
-			System.exit(123);
-		}
+            // Fehlerstatuscode zurückgeben
+            System.exit(123);
+        }
 
-		// Erfolgsstatuscode zurückgeben
-		System.exit(0);
-	}
+        // Erfolgsstatuscode zurückgeben
+        System.exit(0);
+    }
 }

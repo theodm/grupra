@@ -4,19 +4,29 @@ import propra.imageconverter.image.ImageReader;
 
 import java.io.IOException;
 
-// TODO Limitationen des PeekandConvertPixelIterator und Tatsache
-// dass er nicht so handlebar ist bzw der ImageReader dann unnütz ist.
+/**
+ * Siehe die Beschreibung von {@link PixelIterator}. Implementiert
+ * die Vorausschau auf den nächsten Bildpunkt.
+ */
 public abstract class PeekAndConvertPixelIterator implements PixelIterator {
 	private final ImageReader imageReader;
-	private byte[] nextPixel;
 
-	PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
-		this.imageReader = imageReader;
+    /**
+     * Vorgespeicherter Bildpunkt, um das Peeken auf den nächsten Bildpunkt zu ermöglichen.
+     */
+    private byte[] nextPixel;
 
-		this.nextPixel = convertPixel(imageReader.readNextPixel());
-	}
+    PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
+        this.imageReader = imageReader;
 
-	abstract byte[] convertPixel(byte[] inputPixel);
+        this.nextPixel = convertPixel(imageReader.readNextPixel());
+    }
+
+    /**
+     * Konvertierungsmethode für den Pixel-Wert von RGB in das spezifizierte
+     * Format.
+     */
+    abstract byte[] convertPixel(byte[] inputPixel);
 
 	@Override public final byte[] readNextPixel() throws IOException {
 		byte[] currentPixel = nextPixel;
@@ -33,7 +43,17 @@ public abstract class PeekAndConvertPixelIterator implements PixelIterator {
 		return nextPixel;
 	}
 
-	@Override public final boolean hasNextPixel() {
-		return nextPixel != null;
-	}
+    @Override public final boolean hasNextPixel() {
+        return nextPixel != null;
+    }
+
+    @Override
+    public final int getWidth() {
+        return imageReader.getWidth();
+    }
+
+    @Override
+    public final int getHeight() {
+        return imageReader.getHeight();
+    }
 }
