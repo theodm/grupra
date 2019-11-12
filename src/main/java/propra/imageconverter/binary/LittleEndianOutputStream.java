@@ -12,8 +12,6 @@ import java.math.BigInteger;
  * an.
  */
 public final class LittleEndianOutputStream implements AutoCloseable {
-	// Die Klasse könnte auch von OutputStream ableiten,
-	// das war aber bisher entbehrlich. (YAGNI)
 	private final BufferedOutputStream outputStream;
 
 	public LittleEndianOutputStream(BufferedOutputStream outputStream) {

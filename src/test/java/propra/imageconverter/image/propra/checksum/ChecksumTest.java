@@ -6,7 +6,6 @@ import propra.imageconverter.image.propra.Checksum;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,7 +24,7 @@ class ChecksumTest {
 	 */
 	private long calcForByteArray(byte[] bytes) throws IOException {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
-            return Checksum.calcStreamingChecksum(BigInteger.valueOf(bytes.length), bis::read);
+			return Checksum.calcStreamingChecksum(bytes.length, bis::read);
         }
 	}
 

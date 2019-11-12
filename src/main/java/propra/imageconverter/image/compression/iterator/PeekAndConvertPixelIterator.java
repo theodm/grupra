@@ -16,7 +16,7 @@ public abstract class PeekAndConvertPixelIterator implements PixelIterator {
      */
     private byte[] nextPixel;
 
-    PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
+    protected PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
         this.imageReader = imageReader;
 
         this.nextPixel = convertPixel(imageReader.readNextPixel());
@@ -26,7 +26,7 @@ public abstract class PeekAndConvertPixelIterator implements PixelIterator {
      * Konvertierungsmethode für den Pixel-Wert von RGB in das spezifizierte
      * Format.
      */
-    abstract byte[] convertPixel(byte[] inputPixel);
+    protected abstract byte[] convertPixel(byte[] inputPixel);
 
 	@Override public final byte[] readNextPixel() throws IOException {
 		byte[] currentPixel = nextPixel;

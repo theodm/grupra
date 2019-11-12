@@ -6,7 +6,6 @@ import propra.imageconverter.image.ImageReader;
 import propra.imageconverter.image.ImageWriter;
 import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
-import propra.imageconverter.image.compression.iterator.TGAPixelIterator;
 import propra.imageconverter.image.compression.writer.CompressionWriter;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ public final class TgaWriter implements ImageWriter {
 
         outputStream.writeUByte(0); // Länge der Bild-ID
         outputStream.writeUByte(0); // Palettentyp
-        outputStream.writeUByte(compressionType.getTgaPictureType()); // Bildtyp, nur unterstützt 2 = RGB (24 Bit) unkomprimiert und 10 = RGB (24 Bit) RLE-komprimiert
+		outputStream.writeUByte(TGAFileFormat.compressionTypeToTGACompressionType(compressionType)); // Bildtyp, nur unterstützt 2 = RGB (24 Bit) unkomprimiert und 10 = RGB (24 Bit) RLE-komprimiert
         outputStream.writeFully(new byte[] { 0, 0, 0, 0, 0 }); // Palletenbeginn, Palettenlänge und Palettengröße immer 0, da keine Palette vorhanden
         outputStream.writeUShort(0); // X-Koordinate für Nullpunkt, siehe parse()
 		outputStream.writeUShort(imageReader.getHeight()); // Y-Koordinate für Nullpunkt

@@ -7,7 +7,6 @@ import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
-import java.math.BigInteger;
 
 import static propra.imageconverter.util.RequireUtils.require;
 
@@ -21,20 +20,20 @@ public final class TgaReader implements ImageReader {
     private final LittleEndianInputStream inputStream;
     private final int width;
     private final int height;
-    private final BigInteger numberOfPixels;
+    private final long numberOfPixels;
     private final CompressionReader compression;
 
     /**
      * Aktuelle Leseposition des Datensegments in Bytes.
      */
-    private BigInteger currentPosInContent = BigInteger.ZERO;
+    private long currentPosInContent = 0;
 
     private TgaReader(
             ReadWriteFile readWriteFile,
             LittleEndianInputStream inputStream,
             int width,
             int height,
-            BigInteger numberOfPixels,
+            long numberOfPixels,
             CompressionReader compression) {
         this.readWriteFile = readWriteFile;
         this.inputStream = inputStream;
@@ -88,20 +87,17 @@ public final class TgaReader implements ImageReader {
         int bitsPerPoint = dataInput.readUByte();
         require(bitsPerPoint == 24, "Es werden pro Bildpunkt im TGA-Format nur exakt 24 bits unterstützt. Angegeben wurde " + bitsPerPoint + ".");
 
-        // Nach Vorgabe binaryInputt die Lage des Nullpunkts oben links
+        // Nach Vorgabe ist die Lage des Nullpunkts oben links
         // und die Anzahl der Attributbits pro Punkt 3 (für RBG bzw. GBR)
         int pictureAttributeByte = dataInput.readUByte();
         require(pictureAttributeByte == 0b00100000, "Ein Bild im TGA-Format wird nur unterstützt, falls das Bildattributsbyte 0b00100000 ist. Das bedeutet die Lage des Nullpunkts ist oben links.");
 
         // Nach Vorgabe besteht keine Bild-ID und Farbpalette
 
-        BigInteger numberOfPixels = BigInteger.ONE
-                .multiply(BigInteger.valueOf(width))
-                .multiply(BigInteger.valueOf(height))
-                .multiply(BigInteger.valueOf(3));
+        long numberOfPixels = ((long) width) * ((long) height) * 3L;
 
         CompressionReader compression =
-                CompressionReader.fromTGAPictureType(pictureType);
+                TGAFileFormat.compressionReaderForPictureType(pictureType);
 
         return new TgaReader(readWriteFile, dataInput, width, height, numberOfPixels, compression);
     }
@@ -126,14 +122,14 @@ public final class TgaReader implements ImageReader {
 
         // Aktuelle Position (in Bildpunkten) in der Datei
         // aktualisieren
-        currentPosInContent = currentPosInContent.add(BigInteger.valueOf(3));
+        currentPosInContent += 3;
 
         return nextPixel;
     }
 
     @Override
     public boolean hasNextPixel() {
-        return currentPosInContent.compareTo(numberOfPixels) < 0;
+        return currentPosInContent < numberOfPixels;
     }
 
     @Override

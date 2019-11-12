@@ -80,6 +80,13 @@ public final class BaseNEnDecoder {
 
             writer.write(alphabet.charAt(value));
         }
+
+        // Entsprechend der Aufgabenstellung wird es durch den
+        // BitInputStream (implizit) umgesetzt:
+        //
+        // Bei der Kodierung wird kein Padding verwendet. Das bedeutet: hört der zu kodierende Datenstrom auf,
+        // wird ein potentiell noch nicht vollständig verwendetes Byte mit 0-Bits aufgefüllt und (als letztes Byte)
+        // gespeichert. Es werden jedoch keine zusätzlichen Paddingsymbole angehängt.
     }
 
     /**

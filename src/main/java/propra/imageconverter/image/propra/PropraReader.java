@@ -8,7 +8,6 @@ import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 
 import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
@@ -25,20 +24,20 @@ public final class PropraReader implements ImageReader {
     private final LittleEndianInputStream inputStream;
     private final int width;
     private final int height;
-    private final BigInteger numberOfPixels;
+    private final long numberOfPixels;
     private final CompressionReader compression;
 
     /**
      * Die aktuelle Position des Pixel-Zeigers.
      */
-    private BigInteger currentPosInContent = BigInteger.ZERO;
+    private long currentPosInContent = 0;
 
     private PropraReader(
             ReadWriteFile readWriteFile,
             LittleEndianInputStream inputStream,
             int width,
             int height,
-            BigInteger numberOfPixels,
+            long numberOfPixels,
             CompressionReader compression) {
         this.readWriteFile = readWriteFile;
         this.inputStream = inputStream;
@@ -87,7 +86,7 @@ public final class PropraReader implements ImageReader {
         require(compressionType == 0 || compressionType == 1, "Es wird für Propa-Dateien nur der Kompressionstyp 0 und 1 unterstützt. Angeben wurde der Kompressionstyp " + compressionType + ".");
 
         // Länge des Bilddatensegments
-        BigInteger lengthOfContent = inputStream.readULong();
+        long lengthOfContent = inputStream.readULong().longValueExact();
 
         // Prüfsumme
         long checksum = inputStream.readUInt();
@@ -113,12 +112,9 @@ public final class PropraReader implements ImageReader {
         inputStream = readWriteFile.inputStream(PropraFileFormat.OFFSET_DATA);
 
         // Anzahl der Bildpunkte
-        BigInteger numberOfPixels = BigInteger.ONE
-                .multiply(BigInteger.valueOf(width))
-                .multiply(BigInteger.valueOf(height))
-                .multiply(BigInteger.valueOf(3));
+        long numberOfPixels = ((long) width) * ((long) height) * 3L;
 
-        return new PropraReader(readWriteFile, inputStream, width, height, numberOfPixels, CompressionReader.fromPropraCompressionType(compressionType));
+        return new PropraReader(readWriteFile, inputStream, width, height, numberOfPixels, PropraFileFormat.compressionReaderForCompressionType(compressionType));
     }
 
     @Override
@@ -141,14 +137,14 @@ public final class PropraReader implements ImageReader {
         ArrayUtils.swap(nextPixel, 0, 2);
         ArrayUtils.swap(nextPixel, 1, 2);
 
-        currentPosInContent = currentPosInContent.add(BigInteger.valueOf(3));
+        currentPosInContent += 3;
 
         return nextPixel;
     }
 
     @Override
     public boolean hasNextPixel() {
-        return currentPosInContent.compareTo(numberOfPixels) < 0;
+        return currentPosInContent < numberOfPixels;
     }
 
     @Override

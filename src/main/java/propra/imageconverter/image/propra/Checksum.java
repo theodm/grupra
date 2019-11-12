@@ -1,7 +1,6 @@
 package propra.imageconverter.image.propra;
 
 import java.io.IOException;
-import java.math.BigInteger;
 
 /**
  * Die Implementation des Prüfsummenalgorithmus für Propa-Dateien
@@ -25,10 +24,10 @@ public final class Checksum {
      * @return berechnete Prüfsumme für die aus dem [reader] gelesenen Daten
      */
     public static long calcStreamingChecksum(
-            BigInteger n,
+            long n,
             ChecksumByteReader reader
     ) throws IOException {
-        BigInteger X = BigInteger.valueOf(65513);
+        long X = 65513;
 
         // Hier befindet sich der im Kursportal vorgestellte Algorithmus.
         // Es wurden die folgenden Anpassungen vorgenommen:
@@ -40,19 +39,19 @@ public final class Checksum {
         //   Stream gelesen wurden.
         // - Es wird BigInteger verwendet um nicht mit vorzeichenlosen Werten abgebildet auf
         //   vorzeichenbehaftete Werte arbeiten zu müssen.
-        BigInteger bResult = BigInteger.ONE;
-        BigInteger lastASum = BigInteger.ZERO;
-        for (BigInteger j = BigInteger.ONE; j.compareTo(n) <= 0; j = j.add(BigInteger.ONE)) {
+        long bResult = 1;
+        long lastASum = 0;
+        for (long j = 1; j <= n; j++) {
             int byteRead = reader.readUByte();
 
-            lastASum = lastASum.add(j.add(BigInteger.valueOf(byteRead)));
-            bResult = bResult.add(lastASum.remainder(X)).remainder(X);
+            lastASum = (lastASum + (j + byteRead)) % X;
+            bResult = (bResult + lastASum) % X;
         }
 
-        BigInteger aResult = lastASum.remainder(X);
+        long aResult = lastASum;
 
         // 2 << 15 == 2^16
-        return aResult.multiply(BigInteger.valueOf(2 << 15)).add(bResult).longValueExact();
+        return (aResult * (2 << 15)) + bResult;
     }
 
     /**

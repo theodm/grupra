@@ -33,7 +33,7 @@ public interface PixelIterator {
 	boolean hasNextPixel();
 
 	/**
-	 * Gibt die Breite des zugrundeliegenden
+	 * Gibt die Breite des zugrund veliegenden
 	 * Bildes in Pixeln zurück.
 	 */
 	int getWidth();

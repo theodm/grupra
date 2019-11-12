@@ -29,38 +29,6 @@ public enum CompressionType {
 	}
 
 	/**
-	 * Gibt für den aktuellen Aufzählungswert, die
-	 * interne Repräsentation (=Kompressionstyp) im Propra-Format zurück.
-	 */
-	public int getPropraCompressionType() {
-		switch (this) {
-			case NO_COMPRESSION:
-				return 0;
-			case RLE:
-				return 1;
-		}
-
-		// Kann nicht vorkommen!
-		throw new PropraException("Der Kompressionstyp " + this + " (Propra) wird nicht unterstützt.");
-	}
-
-	/**
-	 * Gibt für den aktuellen Aufzählungswert, die
-	 * interne Repräsentation (=Kompressionstyp) im TGA-Format zurück.
-	 */
-	public int getTgaPictureType() {
-		switch (this) {
-			case NO_COMPRESSION:
-				return 2;
-			case RLE:
-				return 10;
-		}
-
-		// Kann nicht vorkommen!
-		throw new PropraException("Der Kompressionstyp " + this + " (TGA) wird nicht unterstützt.");
-	}
-
-	/**
 	 * Gibt den entsprechenden CompressionWriter
 	 * für den aktuellen Aufzählungswert zurück.
 	 */

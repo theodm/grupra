@@ -17,8 +17,6 @@ public class NoCompressionReader implements CompressionReader {
 
         inputStream.readFully(pixel);
 
-        // Hier keine Kopie, da wir unser Byte-Array
-        // weiter nutzen.
         return pixel;
     }
 }

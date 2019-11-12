@@ -1,6 +1,8 @@
-package propra.imageconverter.image.compression.iterator;
+package propra.imageconverter.image.tga;
 
 import propra.imageconverter.image.ImageReader;
+import propra.imageconverter.image.compression.iterator.PeekAndConvertPixelIterator;
+import propra.imageconverter.image.compression.iterator.PixelIterator;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
@@ -16,7 +18,7 @@ public final class TGAPixelIterator extends PeekAndConvertPixelIterator {
 	}
 
 	@Override
-	byte[] convertPixel(byte[] inputPixel) {
+	protected byte[] convertPixel(byte[] inputPixel) {
 		byte[] outputPixel = Arrays.copyOf(inputPixel, 3);
 
 		// Konvertierung von RGB in BGR

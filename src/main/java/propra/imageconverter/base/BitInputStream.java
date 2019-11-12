@@ -53,7 +53,7 @@ public class BitInputStream implements AutoCloseable {
     /**
      * Liest die nächsten {@param numberOfBits} aus dem darunterliegenden
      * Eingabestream aus.
-     * <p>
+     *
      * Gibt -1 zurück, falls das Ende des Streams erreicht wurde.
      */
     public int readBits(int numberOfBits) throws IOException {

@@ -20,7 +20,7 @@ public final class ImageConverter {
     /**
      * Überprüft, ob die erforderlichen Argumente für die Aktion
      * übergeben wurde und gibt eine Fehlermeldung aus, falls zusätzliche
-     * Parameter aus.
+     * Parameter angegeben wurden aus.
      *
      * @param action       Die aktuell ausgeführte Aktion.
      * @param neededArgs   Die erforderlichen Argumente für diese Aktion

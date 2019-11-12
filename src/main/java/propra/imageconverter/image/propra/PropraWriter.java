@@ -7,7 +7,6 @@ import propra.imageconverter.image.ImageReader;
 import propra.imageconverter.image.ImageWriter;
 import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
-import propra.imageconverter.image.compression.iterator.PropraPixelIterator;
 import propra.imageconverter.image.compression.writer.CompressionWriter;
 
 import java.io.IOException;
@@ -47,7 +46,7 @@ public final class PropraWriter implements ImageWriter {
         outputStream.writeUShort(imageReader.getWidth()); // Bildbreite
         outputStream.writeUShort(imageReader.getHeight()); // Bildhöhe
         outputStream.writeUByte(24); // Bits pro Bildpunkt (=24)
-        outputStream.writeUByte(compressionType.getPropraCompressionType()); // Kompressionstyp (0=unkomprimiert)
+        outputStream.writeUByte(PropraFileFormat.compressionTypeToPropraCompressionType(compressionType)); // Kompressionstyp (0=unkomprimiert)
 
         // Wir kennen die Datenlänge noch nicht,
         // da die Kompression aktiv sein könnte,
@@ -75,7 +74,7 @@ public final class PropraWriter implements ImageWriter {
         // Und dann berechnen wir die Prüfsumme der
         // geschriebenen Daten
         LittleEndianInputStream inputStream = outputFile.inputStream(PropraFileFormat.OFFSET_DATA);
-        long checksum = Checksum.calcStreamingChecksum(BigInteger.valueOf(lengthOfContent), inputStream::read);
+        long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::read);
         outputFile.releaseInputStream();
 
         // Wir setzen den Cursor des darunterliegenden Ausgabestreams
