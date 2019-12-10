@@ -125,6 +125,8 @@ public class ReadWriteFile implements AutoCloseable {
         if (lastOutputStream != null) {
             lastOutputStream.flush();
         }
+
+        randomAccessFile.close();
     }
 
 }

@@ -45,55 +45,59 @@ public final class PropraWriter implements ImageWriter {
 
         CompressionWriter compression
                 = compressionType.getCompressionWriter();
+        {
+            LittleEndianOutputStream outputStream = new LittleEndianOutputStream(outputFile.outputStream(0));
 
-        LittleEndianOutputStream outputStream = new LittleEndianOutputStream(outputFile.outputStream(0));
+            outputStream.writeFully(MAGIC_HEADER); // Formatkennung
+            outputStream.writeUShort(imageReader.getWidth()); // Bildbreite
+            outputStream.writeUShort(imageReader.getHeight()); // Bildhöhe
+            outputStream.writeUByte(24); // Bits pro Bildpunkt (=24)
+            outputStream.writeUByte(PropraFileFormat.compressionTypeToPropraCompressionType(compressionType)); // Kompressionstyp (0=unkomprimiert)
 
-        outputStream.writeFully(MAGIC_HEADER); // Formatkennung
-        outputStream.writeUShort(imageReader.getWidth()); // Bildbreite
-        outputStream.writeUShort(imageReader.getHeight()); // Bildhöhe
-        outputStream.writeUByte(24); // Bits pro Bildpunkt (=24)
-        outputStream.writeUByte(PropraFileFormat.compressionTypeToPropraCompressionType(compressionType)); // Kompressionstyp (0=unkomprimiert)
+            // Wir kennen die Datenlänge noch nicht,
+            // da die Kompression aktiv sein könnte,
+            // daher setzen wir sie zuerst auf 0
+            outputStream.writeULong(BigInteger.ZERO); // Länge des Datensegments in Bytes (vorzeichenlos)
 
-        // Wir kennen die Datenlänge noch nicht,
-        // da die Kompression aktiv sein könnte,
-        // daher setzen wir sie zuerst auf 0
-        outputStream.writeULong(BigInteger.ZERO); // Länge des Datensegments in Bytes (vorzeichenlos)
+            // Wir wissen die Prüfsumme zu diesem Zeitpunkt noch nicht,
+            // wir schreiben zuerst alle Daten und berechnen die Prüfsumme dann.
+            // Hier wird erst mal eine 0 geschrieben
+            outputStream.writeUInt(0); // Prüfsumme über die Bytes des Datensegments (vorzeichenlos)
 
-        // Wir wissen die Prüfsumme zu diesem Zeitpunkt noch nicht,
-        // wir schreiben zuerst alle Daten und berechnen die Prüfsumme dann.
-        // Hier wird erst mal eine 0 geschrieben
-        outputStream.writeUInt(0); // Prüfsumme über die Bytes des Datensegments (vorzeichenlos)
+            outputFile.releaseOutputStream();
+        }
+        long lengthOfContent;
+        {
+            BufferedOutputStream outputStreamData
+                    = outputFile.outputStream(PropraFileFormat.OFFSET_DATA);
 
-        // Wir befinden uns nun am Beginn des Datensegments
-        outputFile.releaseOutputStream();
-        BufferedOutputStream outputStreamData
-                = outputFile.outputStream(PropraFileFormat.OFFSET_DATA);
+            PixelIterator pixelIterator =
+                    PropraPixelIterator.forImageReader(imageReader);
 
-        PixelIterator pixelIterator =
-                PropraPixelIterator.forImageReader(imageReader);
+            lengthOfContent = compression.write(pixelIterator, outputStreamData);
 
-        long lengthOfContent = compression.write(pixelIterator, outputStreamData);
+            outputFile.releaseOutputStream();
+        }
 
-        outputFile.releaseOutputStream();
+        {
+            // Alle Daten wurden geschrieben, daher müssen wir nun nochmal die
+            // Prüfsumme berechnen.
+            // Wir setzenden FilePointer des darunterliegenden Ausgabestreams
+            // an den Anfang des Datensegments
+            // Und dann berechnen wir die Prüfsumme der
+            // geschriebenen Daten
+            LittleEndianInputStream inputStream = new LittleEndianInputStream(outputFile.inputStream(PropraFileFormat.OFFSET_DATA));
+            long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::readUByte);
+            outputFile.releaseInputStream();
 
-        // Alle Daten wurden geschrieben, daher müssen wir nun nochmal die
-        // Prüfsumme berechnen.
-        // Wir setzenden FilePointer des darunterliegenden Ausgabestreams
-        // an den Anfang des Datensegments
-        // Und dann berechnen wir die Prüfsumme der
-        // geschriebenen Daten
-        LittleEndianInputStream inputStream = new LittleEndianInputStream(outputFile.inputStream(PropraFileFormat.OFFSET_DATA));
-        long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::read);
-        outputFile.releaseInputStream();
+            // Wir setzen den Cursor des darunterliegenden Ausgabestreams
+            // an die Position der Datensegmentlänge.
+            // Wir schreiben die Datensegmentlänge und die Prüfsumme und schließen den Ausgabestream
+            LittleEndianOutputStream outputStream = new LittleEndianOutputStream(outputFile.outputStream(PropraFileFormat.OFFSET_DATA_SEGMENT_LENGTH));
+            outputStream.writeULong(BigInteger.valueOf(lengthOfContent));
+            outputStream.writeUInt(checksum);
+            outputFile.releaseOutputStream();
 
-        // Wir setzen den Cursor des darunterliegenden Ausgabestreams
-        // an die Position der Datensegmentlänge.
-        // Wir schreiben die Datensegmentlänge und die Prüfsumme und schließen den Ausgabestream
-        outputStream = new LittleEndianOutputStream(outputFile.outputStream(PropraFileFormat.OFFSET_DATA_SEGMENT_LENGTH));
-        outputStream.writeULong(BigInteger.valueOf(lengthOfContent));
-        outputStream.writeUInt(checksum);
-        outputFile.releaseOutputStream();
-
-        outputFile.close();
+        }
     }
 }

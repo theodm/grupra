@@ -16,6 +16,9 @@ public final class BitOutputStream implements AutoCloseable {
      */
     private int currentByte = 0;
 
+    private int counter = 0;
+    private int counterBytes = 0;
+
     /**
      * Der aktuelle Bit-Index innerhalb des geschriebenen Bytes. Bis dahin sind
      * die Bits innerhalb dieses Bytes bereits geschrieben.
@@ -30,7 +33,18 @@ public final class BitOutputStream implements AutoCloseable {
      * Schreibt die nächsten {@param numberOfBits} in den darunterliegenden Ausgabestream mit dem übergebenen
      * Wert {@param value}.
      */
+
     public void writeBits(int numberOfBits, int value) throws IOException {
+        while (numberOfBits > 0) {
+            // TODO
+            writeBits8(numberOfBits, value % 8);
+            numberOfBits = numberOfBits - 8;
+            value = value >> 8;
+        }
+    }
+
+    private void writeBits8(int numberOfBits, int value) throws IOException {
+        counter += numberOfBits;
         int leftByte = currentByte;
         // Wir schauen uns das ganze wieder in
         // einer 16-bittigen Zahl an
@@ -50,6 +64,7 @@ public final class BitOutputStream implements AutoCloseable {
             // daher schreiben wir das aktuelle Byte
             currentBitOffset = (currentBitOffset + numberOfBits) % 8;
             origin.write(leftByte);
+            counterBytes++;
 
             // und das neue Byte wird das aktuelle Byte für den nächsten
             // Durchlauf

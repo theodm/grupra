@@ -118,7 +118,11 @@ public class RLECompressionWriter implements CompressionWriter {
         int lineCounter = 0;
         byte[] currentPixel = pixelData.readNextPixel();
 
-        while (pixelData.hasNextPixel()) {
+        while (true) {
+            // Das Ende der Daten wurde erreicht.
+            if (currentPixel == null)
+                break;
+
             // Das aktuelle Pixel wiederholt sich
             // im nächsten Pixel
             if (Arrays.equals(currentPixel, pixelData.peekPixel())) {
@@ -191,6 +195,10 @@ public class RLECompressionWriter implements CompressionWriter {
                 }
 
                 numberOfBytesWritten += writeDataBuffer(outputStream, dataBuffer, currentDataBufferIndex);
+
+                if (!pixelData.hasNextPixel()) {
+                    break;
+                }
             }
         }
 

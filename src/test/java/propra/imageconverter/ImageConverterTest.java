@@ -59,7 +59,7 @@ class ImageConverterTest {
 //                , new TestCase("[KE3V] [Erfolgsfall] TGA (rle) -> Propra -> TGA (rle): vorgegebener Testfall 2", "KE3_TestBilder", "test_02_rle.tga", "test_02_rle_ke3.propra", "rle", "uncompressed")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra -> TGA (rle) -> Propra: vorgegebener Testfall 3", "KE3_TestBilder", "test_03_uncompressed.propra", "test_03_uncompressed_ke3.tga", "uncompressed", "rle")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra (rle) -> TGA -> Propra (rle): vorgegebener Testfall 4", "KE3_TestBilder", "test_04_rle.propra", "test_04_rle_ke3.tga", "rle", "uncompressed")
-                new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): vorgegebener Testfall 5", "KE3_TestBilder", "test_05_huffman.propra", "test_05_huffman.tga", "huffman", "uncompressed")
+                new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): vorgegebener Testfall 5", "KE3_TestBilder", "test_05_huffman.propra", "test_05_huffman.tga", "huffman", "rle")
 
         );
     }
