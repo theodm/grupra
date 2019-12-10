@@ -5,6 +5,7 @@ import propra.imageconverter.image.compression.iterator.PixelIterator;
 import propra.imageconverter.util.ArrayUtils;
 import propra.imageconverter.util.DebugUtils;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -93,98 +94,106 @@ public class RLECompressionWriter implements CompressionWriter {
 	}
 
 	@Override public long write(
-			PixelIterator pixelData,
-			LittleEndianOutputStream outputStream
-	) throws IOException {
-		// Wir zählen mit, wieviele Bytes wir schreiben.
-		long numberOfBytesWritten = 0;
-		int pictureWidth = pixelData.getWidth();
+            PixelIterator pixelData,
+            BufferedOutputStream outputStream
+    ) throws IOException {
+        return write(pixelData, new LittleEndianOutputStream(outputStream));
+    }
 
-		// DataBuffer hier für Speichereffizienz, grds so nah wie möglich an Ausführung
-		byte[] dataBuffer = new byte[Math.min(DATA_OR_REPETITIONS_MAX_LENGTH, pictureWidth) * 3];
+    private long write(
+            PixelIterator pixelData,
+            LittleEndianOutputStream outputStream
+    ) throws IOException {
 
-		// Der lineCounter zählt ab, in welchem Zeichen
-		// der aktuellen Zeile wir uns befinden; am Ende der Zeile
-		// müssen wir die aktuellen Wiederholungen oder Datenbuffer schreiben.
-		int lineCounter = 0;
-		byte[] currentPixel = pixelData.readNextPixel();
+        // Wir zählen mit, wieviele Bytes wir schreiben.
+        long numberOfBytesWritten = 0;
+        int pictureWidth = pixelData.getWidth();
 
-		while (pixelData.hasNextPixel()) {
-			// Das aktuelle Pixel wiederholt sich
-			// im nächsten Pixel
-			if (Arrays.equals(currentPixel, pixelData.peekPixel())) {
-				byte[] repeatedPixel = currentPixel;
-				int repeats = 1;
+        // DataBuffer hier für Speichereffizienz, grds so nah wie möglich an Ausführung
+        byte[] dataBuffer = new byte[Math.min(DATA_OR_REPETITIONS_MAX_LENGTH, pictureWidth) * 3];
 
-				while (true) {
-					currentPixel = pixelData.readNextPixel();
-					lineCounter++;
+        // Der lineCounter zählt ab, in welchem Zeichen
+        // der aktuellen Zeile wir uns befinden; am Ende der Zeile
+        // müssen wir die aktuellen Wiederholungen oder Datenbuffer schreiben.
+        int lineCounter = 0;
+        byte[] currentPixel = pixelData.readNextPixel();
 
-					// Das aktuelle Pixel befindet sich in einer
-					// neuen Zeile; daher brechen wir hier ab und
-					// verarbeiten diesen Pixel im nächsten Durchlauf der
-					// äußeren While-Schleife
-					if (lineCounter == pictureWidth) {
-						lineCounter = 0;
-						break;
-					}
+        while (pixelData.hasNextPixel()) {
+            // Das aktuelle Pixel wiederholt sich
+            // im nächsten Pixel
+            if (Arrays.equals(currentPixel, pixelData.peekPixel())) {
+                byte[] repeatedPixel = currentPixel;
+                int repeats = 1;
 
-					// Die maximale Anzahl an Wiederholungen für einen Wiederholungszähler
-					// wurde erreicht, das Pixel wird im nächsten Durchlauf der
-					// äußeren While-Schleife bearbeitet werden
-					if (repeats == DATA_OR_REPETITIONS_MAX_LENGTH)
-						break;
+                while (true) {
+                    currentPixel = pixelData.readNextPixel();
+                    lineCounter++;
 
-					// Das aktuelle Pixel ist keine Wiederholung
-					// mehr, daher abbrechen.
-					if (!Arrays.equals(currentPixel, repeatedPixel))
-						break;
+                    // Das aktuelle Pixel befindet sich in einer
+                    // neuen Zeile; daher brechen wir hier ab und
+                    // verarbeiten diesen Pixel im nächsten Durchlauf der
+                    // äußeren While-Schleife
+                    if (lineCounter == pictureWidth) {
+                        lineCounter = 0;
+                        break;
+                    }
 
-					repeats++;
-				}
+                    // Die maximale Anzahl an Wiederholungen für einen Wiederholungszähler
+                    // wurde erreicht, das Pixel wird im nächsten Durchlauf der
+                    // äußeren While-Schleife bearbeitet werden
+                    if (repeats == DATA_OR_REPETITIONS_MAX_LENGTH)
+                        break;
 
-				// Wir schreiben die wiederholten Bytes aus
-				numberOfBytesWritten += writeRepeatingBuffer(outputStream, repeatedPixel, repeats);
-			} else {
-				// Aktuelles Pixel wiederholt sich nicht.
-				int currentDataBufferIndex = 0;
+                    // Das aktuelle Pixel ist keine Wiederholung
+                    // mehr, daher abbrechen.
+                    if (!Arrays.equals(currentPixel, repeatedPixel))
+                        break;
 
-				// Wir übertragen das aktuelle Pixel in unseren Buffer
-				System.arraycopy(currentPixel, 0, dataBuffer, currentDataBufferIndex * 3, 3);
-				currentDataBufferIndex++;
+                    repeats++;
+                }
 
-				while (true) {
-					currentPixel = pixelData.readNextPixel();
-					lineCounter++;
+                // Wir schreiben die wiederholten Bytes aus
+                numberOfBytesWritten += writeRepeatingBuffer(outputStream, repeatedPixel, repeats);
+            } else {
+                // Aktuelles Pixel wiederholt sich nicht.
+                int currentDataBufferIndex = 0;
 
-					// Das aktuelle Pixel befindet sich in einer
-					// neuen Zeile; daher brechen wir hier ab und
-					// verarbeiten diesen Pixel im nächsten Durchlauf der
-					// äußeren While-Schleife
-					if (lineCounter == pictureWidth) {
-						lineCounter = 0;
-						break;
-					}
+                // Wir übertragen das aktuelle Pixel in unseren Buffer
+                System.arraycopy(currentPixel, 0, dataBuffer, currentDataBufferIndex * 3, 3);
+                currentDataBufferIndex++;
 
-					// Die maximale Anzahl an Daten für einen Datenzähler
-					// wurde erreicht, das Pixel wird im nächsten Durchlauf der
-					// äußeren While-Schleife bearbeitet werden
-					if (currentDataBufferIndex == DATA_OR_REPETITIONS_MAX_LENGTH)
-						break;
+                while (true) {
+                    currentPixel = pixelData.readNextPixel();
+                    lineCounter++;
 
-					// Das aktuelle Byte wiederholt sich, daher muss es als Wiederholung
-					// im nächsten Schleifendurchlauf verarbeitet werden.
-					if (Arrays.equals(currentPixel, pixelData.peekPixel()))
-						break;
+                    // Das aktuelle Pixel befindet sich in einer
+                    // neuen Zeile; daher brechen wir hier ab und
+                    // verarbeiten diesen Pixel im nächsten Durchlauf der
+                    // äußeren While-Schleife
+                    if (lineCounter == pictureWidth) {
+                        lineCounter = 0;
+                        break;
+                    }
 
-					System.arraycopy(currentPixel, 0, dataBuffer, currentDataBufferIndex * 3, 3);
-					currentDataBufferIndex++;
-				}
+                    // Die maximale Anzahl an Daten für einen Datenzähler
+                    // wurde erreicht, das Pixel wird im nächsten Durchlauf der
+                    // äußeren While-Schleife bearbeitet werden
+                    if (currentDataBufferIndex == DATA_OR_REPETITIONS_MAX_LENGTH)
+                        break;
 
-				numberOfBytesWritten += writeDataBuffer(outputStream, dataBuffer, currentDataBufferIndex);
-			}
-		}
+                    // Das aktuelle Byte wiederholt sich, daher muss es als Wiederholung
+                    // im nächsten Schleifendurchlauf verarbeitet werden.
+                    if (Arrays.equals(currentPixel, pixelData.peekPixel()))
+                        break;
 
-		return numberOfBytesWritten;
-	}
+                    System.arraycopy(currentPixel, 0, dataBuffer, currentDataBufferIndex * 3, 3);
+                    currentDataBufferIndex++;
+                }
+
+                numberOfBytesWritten += writeDataBuffer(outputStream, dataBuffer, currentDataBufferIndex);
+            }
+        }
+
+        return numberOfBytesWritten;
+    }
 }

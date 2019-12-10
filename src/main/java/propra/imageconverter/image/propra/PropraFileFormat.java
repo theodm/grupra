@@ -5,6 +5,9 @@ import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.image.compression.reader.NoCompressionReader;
 import propra.imageconverter.image.compression.reader.RLECompressionReader;
+import propra.imageconverter.image.compression.reader.huffman.HuffmanCompressionReader;
+
+import java.io.InputStream;
 
 /**
  * Die Klasse enthält Informationen, die sowohl
@@ -41,12 +44,14 @@ final class PropraFileFormat {
      * Gibt für das Attribut {@param compressionType} einer Propra-Datei den
      * entsprechenden Reader für diesen Kompressionstyp zurück.
      */
-    public static CompressionReader compressionReaderForCompressionType(int compressionType) {
+    public static CompressionReader compressionReaderForCompressionType(InputStream inputStream, int compressionType) {
         switch (compressionType) {
             case 0:
-                return new NoCompressionReader();
+                return new NoCompressionReader(inputStream);
             case 1:
-                return new RLECompressionReader();
+                return new RLECompressionReader(inputStream);
+            case 2:
+                return new HuffmanCompressionReader(inputStream);
         }
 
         throw new PropraException("Der ausgewählte Compression-Type (Propra) " + compressionType + " wird nicht unterstützt.");
@@ -62,6 +67,8 @@ final class PropraFileFormat {
                 return 0;
             case RLE:
                 return 1;
+            case HUFFMAN:
+                return 2;
         }
 
         // Kann nicht vorkommen!

@@ -8,6 +8,7 @@ import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
@@ -21,11 +22,12 @@ import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
  */
 public final class PropraReader implements ImageReader {
     private final ReadWriteFile readWriteFile;
-    private final LittleEndianInputStream inputStream;
     private final int width;
     private final int height;
     private final long numberOfPixels;
-    private final CompressionReader compression;
+    private final int compressionType;
+
+    private CompressionReader compression;
 
     /**
      * Die aktuelle Position des Pixel-Zeigers.
@@ -34,17 +36,17 @@ public final class PropraReader implements ImageReader {
 
     private PropraReader(
             ReadWriteFile readWriteFile,
-            LittleEndianInputStream inputStream,
             int width,
             int height,
             long numberOfPixels,
-            CompressionReader compression) {
+            int compressionType) throws IOException {
         this.readWriteFile = readWriteFile;
-        this.inputStream = inputStream;
         this.width = width;
         this.height = height;
         this.numberOfPixels = numberOfPixels;
-        this.compression = compression;
+        this.compressionType = compressionType;
+
+        reset();
     }
 
     /**
@@ -62,7 +64,7 @@ public final class PropraReader implements ImageReader {
     public static PropraReader create(
             ReadWriteFile readWriteFile
     ) throws IOException {
-        LittleEndianInputStream inputStream = readWriteFile.inputStream(0);
+        LittleEndianInputStream inputStream = new LittleEndianInputStream(readWriteFile.inputStream(0));
 
         // Formatkennung
         byte[] magicHeader = new byte[MAGIC_HEADER.length];
@@ -83,7 +85,7 @@ public final class PropraReader implements ImageReader {
 
         // Kompressionstyp
         int compressionType = inputStream.readUByte();
-        require(compressionType == 0 || compressionType == 1, "Es wird für Propa-Dateien nur der Kompressionstyp 0 und 1 unterstützt. Angeben wurde der Kompressionstyp " + compressionType + ".");
+        require(compressionType == 0 || compressionType == 1 || compressionType == 2, "Es wird für Propra-Dateien nur der Kompressionstyp 0, 1 und 2 unterstützt. Angeben wurde der Kompressionstyp " + compressionType + ".");
 
         // Länge des Bilddatensegments
         long lengthOfContent = inputStream.readULong().longValueExact();
@@ -109,12 +111,11 @@ public final class PropraReader implements ImageReader {
         // auf das Datensegment um dem Benutzer der Klasse
         // das Lesen der Bilddaten zu ermöglichen
         readWriteFile.releaseInputStream();
-        inputStream = readWriteFile.inputStream(PropraFileFormat.OFFSET_DATA);
 
         // Anzahl der Bildpunkte
-        long numberOfPixels = ((long) width) * ((long) height) * 3L;
+        long numberOfPixels = ((long) width) * ((long) height);
 
-        return new PropraReader(readWriteFile, inputStream, width, height, numberOfPixels, PropraFileFormat.compressionReaderForCompressionType(compressionType));
+        return new PropraReader(readWriteFile, width, height, numberOfPixels, compressionType);
     }
 
     @Override
@@ -129,7 +130,7 @@ public final class PropraReader implements ImageReader {
 
     @Override
     public byte[] readNextPixel() throws IOException {
-        byte[] nextPixel = compression.readNextPixel(inputStream);
+        byte[] nextPixel = compression.readNextPixel();
 
         // Das Propra-Format speichert die Pixel im GBR-Format
         // wir wollen unseren Benutzern aber die Daten komfortabel
@@ -137,7 +138,7 @@ public final class PropraReader implements ImageReader {
         ArrayUtils.swap(nextPixel, 0, 2);
         ArrayUtils.swap(nextPixel, 1, 2);
 
-        currentPosInContent += 3;
+        currentPosInContent += 1;
 
         return nextPixel;
     }
@@ -145,6 +146,16 @@ public final class PropraReader implements ImageReader {
     @Override
     public boolean hasNextPixel() {
         return currentPosInContent < numberOfPixels;
+    }
+
+    @Override
+    public void reset() throws IOException {
+        // Wir setzen den aktuellen Cursor zum Anfang des Datensegments zurück.
+        readWriteFile.releaseInputStream();
+        InputStream inputStreamData = readWriteFile.inputStream(PropraFileFormat.OFFSET_DATA);
+
+        compression = PropraFileFormat.compressionReaderForCompressionType(inputStreamData, compressionType);
+        currentPosInContent = 0;
     }
 
     @Override

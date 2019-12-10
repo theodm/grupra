@@ -1,6 +1,7 @@
 package propra.imageconverter.image.compression;
 
 import propra.PropraException;
+import propra.imageconverter.image.compression.reader.huffman.HuffmanCompressionWriter;
 import propra.imageconverter.image.compression.writer.CompressionWriter;
 import propra.imageconverter.image.compression.writer.NoCompressionWriter;
 import propra.imageconverter.image.compression.writer.RLECompressionWriter;
@@ -10,7 +11,8 @@ import propra.imageconverter.image.compression.writer.RLECompressionWriter;
  */
 public enum CompressionType {
 	NO_COMPRESSION,
-	RLE;
+    RLE,
+    HUFFMAN;
 
 	/**
 	 * Wandelt ein übergebenes Kommandozeilenargument in
@@ -22,6 +24,8 @@ public enum CompressionType {
 				return NO_COMPRESSION;
 			case "rle":
 				return RLE;
+            case "huffman":
+                return HUFFMAN;
 		}
 
 		// Kann nicht vorkommen!
@@ -38,6 +42,8 @@ public enum CompressionType {
 				return new NoCompressionWriter();
 			case RLE:
 				return new RLECompressionWriter();
+            case HUFFMAN:
+                return new HuffmanCompressionWriter();
 		}
 
 		// Kann nicht vorkommen!

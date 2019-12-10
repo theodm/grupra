@@ -30,4 +30,6 @@ public interface ImageReader extends AutoCloseable {
      * oder das Ende der Bilddaten erreicht wurde.
      */
     boolean hasNextPixel();
+
+    void reset() throws IOException;
 }

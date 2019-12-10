@@ -3,6 +3,7 @@ package propra.imageconverter.image.compression.reader;
 import propra.imageconverter.binary.LittleEndianInputStream;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 /**
@@ -10,6 +11,8 @@ import java.util.Arrays;
  * RLE-komprimierte Daten.
  */
 public class RLECompressionReader implements CompressionReader {
+    private final LittleEndianInputStream inputStream;
+
     // Speichert die verbleibenden unkomprimierten Bildpunkte bis zum
     // nächsten Steuerbyte; falls > 0 befindet sich der Reader im Datenmodus
     private int remainingNonRepeatedPixels = 0;
@@ -23,10 +26,13 @@ public class RLECompressionReader implements CompressionReader {
     // Bildpunkt.
     private final byte[] repeatedPixel = new byte[3];
 
+
+    public RLECompressionReader(InputStream inputStream) {
+        this.inputStream = new LittleEndianInputStream(inputStream);
+    }
+
     @Override
-    public byte[] readNextPixel(
-            LittleEndianInputStream inputStream
-    ) throws IOException {
+    public byte[] readNextPixel() throws IOException {
         // Reader befindet sich im Wiederholungsmodus
         if (remainingRepetitions > 0) {
             this.remainingRepetitions--;
@@ -76,7 +82,7 @@ public class RLECompressionReader implements CompressionReader {
             // Rekursiver Aufruf, damit rufen wir garantiert
             // aber nur den nächsten Bildpunkt ab (da this.remainingRepetitions nun größer 0 ist).
             // Eine Endlosschleife ist zumindest nach der Programmlogik nicht möglich.
-            return readNextPixel(inputStream);
+            return readNextPixel();
         }
 
         // Ansonsten: Behandlung des Datenzählers
@@ -89,6 +95,6 @@ public class RLECompressionReader implements CompressionReader {
         // Rekursiver Aufruf, damit rufen wir garantiert
         // aber nur den nächsten Bildpunkt ab (da this.remainingNonRepeatedPixels nun größer 0 ist).
         // Eine Endlosschleife ist zumindest nach der Programmlogik nicht möglich.
-        return readNextPixel(inputStream);
+        return readNextPixel();
     }
 }

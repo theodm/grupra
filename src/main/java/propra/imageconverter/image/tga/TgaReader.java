@@ -7,6 +7,7 @@ import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import static propra.imageconverter.util.RequireUtils.require;
 
@@ -17,11 +18,12 @@ import static propra.imageconverter.util.RequireUtils.require;
  */
 public final class TgaReader implements ImageReader {
     private final ReadWriteFile readWriteFile;
-    private final LittleEndianInputStream inputStream;
     private final int width;
     private final int height;
     private final long numberOfPixels;
-    private final CompressionReader compression;
+    private final int pictureType;
+
+    private CompressionReader compression;
 
     /**
      * Aktuelle Leseposition des Datensegments in Bytes.
@@ -30,51 +32,51 @@ public final class TgaReader implements ImageReader {
 
     private TgaReader(
             ReadWriteFile readWriteFile,
-            LittleEndianInputStream inputStream,
             int width,
             int height,
             long numberOfPixels,
-            CompressionReader compression) {
+            int pictureType) throws IOException {
         this.readWriteFile = readWriteFile;
-        this.inputStream = inputStream;
         this.width = width;
         this.height = height;
         this.numberOfPixels = numberOfPixels;
-        this.compression = compression;
+        this.pictureType = pictureType;
+
+        reset();
     }
 
     public static TgaReader create(
             ReadWriteFile readWriteFile
     ) throws IOException {
-        LittleEndianInputStream dataInput = readWriteFile.inputStream(0);
+        LittleEndianInputStream inputStream = new LittleEndianInputStream(readWriteFile.inputStream(0));
 
         // Länge der Bild-ID, per Aufgabenstellung 0
-        int lengthOfPictureID = dataInput.readUByte();
+        int lengthOfPictureID = inputStream.readUByte();
         require(lengthOfPictureID == 0, "Die Bild-ID des TGA-Formats wird vom Konverter nicht unterstützt.");
 
         // Farbpalettentyp
         // 0 = keine Farbpalette
         // 1 = Farbpalette vorhanden
-        int paletteType = dataInput.readUByte();
+        int paletteType = inputStream.readUByte();
         require(paletteType == 0, "Eine Palette wird im TGA-Format nicht unterstützt.");
 
         // Bildtyp
         // nur unterstützt: 2 = RGB (24 oder 32 Bit) unkomprimiert
         //                 10 = RGB (24 oder 32 Bit) RLE-komprimiert
-        int pictureType = dataInput.readUByte();
+        int pictureType = inputStream.readUByte();
         require(pictureType == 2 || pictureType == 10, "Es wird im TGA-Format nur der Bildtyp 2 oder 10 unterstützt. Angegeben wurde Bildtyp " + pictureType + ".");
 
         // Palettenbeginn, Palettenlänge und Palettengröße überspringen
-        dataInput.skip(5);
+        inputStream.skip(5);
 
         // X-Koordinate für Nullpunkt
         // Y-Koordinate für Nullpunkt
-        int xZero = dataInput.readUShort();
-        int yZero = dataInput.readUShort();
+        int xZero = inputStream.readUShort();
+        int yZero = inputStream.readUShort();
 
         // Breite und Länge des Bilds
-        int width = dataInput.readUShort();
-        int height = dataInput.readUShort();
+        int width = inputStream.readUShort();
+        int height = inputStream.readUShort();
 
         // Wir ignorieren die Werte von xZero und yZero,
         // schreiben sie aber einheitlich.
@@ -84,22 +86,20 @@ public final class TgaReader implements ImageReader {
         require(height != 0, "Die Höhe eines Bilds darf nicht 0 sein.");
 
         // Bits pro Bildpunkt, nach Vorgabe immer 24
-        int bitsPerPoint = dataInput.readUByte();
+        int bitsPerPoint = inputStream.readUByte();
         require(bitsPerPoint == 24, "Es werden pro Bildpunkt im TGA-Format nur exakt 24 bits unterstützt. Angegeben wurde " + bitsPerPoint + ".");
 
         // Nach Vorgabe ist die Lage des Nullpunkts oben links
         // und die Anzahl der Attributbits pro Punkt 3 (für RBG bzw. GBR)
-        int pictureAttributeByte = dataInput.readUByte();
+        int pictureAttributeByte = inputStream.readUByte();
         require(pictureAttributeByte == 0b00100000, "Ein Bild im TGA-Format wird nur unterstützt, falls das Bildattributsbyte 0b00100000 ist. Das bedeutet die Lage des Nullpunkts ist oben links.");
 
         // Nach Vorgabe besteht keine Bild-ID und Farbpalette
-
         long numberOfPixels = ((long) width) * ((long) height) * 3L;
 
-        CompressionReader compression =
-                TGAFileFormat.compressionReaderForPictureType(pictureType);
+        readWriteFile.releaseInputStream();
 
-        return new TgaReader(readWriteFile, dataInput, width, height, numberOfPixels, compression);
+        return new TgaReader(readWriteFile, width, height, numberOfPixels, pictureType);
     }
 
     @Override
@@ -114,7 +114,7 @@ public final class TgaReader implements ImageReader {
 
     @Override
     public byte[] readNextPixel() throws IOException {
-        byte[] nextPixel = compression.readNextPixel(inputStream);
+        byte[] nextPixel = compression.readNextPixel();
 
         // Wir lesen im Format BGR, wollen aber
         // dem Aufrufer das Format RGB liefern.
@@ -130,6 +130,18 @@ public final class TgaReader implements ImageReader {
     @Override
     public boolean hasNextPixel() {
         return currentPosInContent < numberOfPixels;
+    }
+
+    @Override
+    public void reset() throws IOException {
+        // An Stelle des Datensegments "starten" wir einen neuen
+        // Eingabestream.
+        readWriteFile.releaseInputStream();
+        InputStream inputStreamData = readWriteFile.inputStream(TGAFileFormat.OFFSET_DATA);
+
+        compression =
+                TGAFileFormat.compressionReaderForPictureType(inputStreamData, pictureType);
+        currentPosInContent = 0;
     }
 
     @Override

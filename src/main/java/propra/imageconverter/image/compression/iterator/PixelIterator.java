@@ -32,6 +32,8 @@ public interface PixelIterator {
 	 */
 	boolean hasNextPixel();
 
+    void reset() throws IOException;
+
 	/**
 	 * Gibt die Breite des zugrund veliegenden
 	 * Bildes in Pixeln zurück.

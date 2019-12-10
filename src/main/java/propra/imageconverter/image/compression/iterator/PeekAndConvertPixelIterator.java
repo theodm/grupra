@@ -16,6 +16,13 @@ public abstract class PeekAndConvertPixelIterator implements PixelIterator {
      */
     private byte[] nextPixel;
 
+    @Override
+    public final void reset() throws IOException {
+        imageReader.reset();
+
+        this.nextPixel = convertPixel(imageReader.readNextPixel());
+    }
+
     protected PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
         this.imageReader = imageReader;
 

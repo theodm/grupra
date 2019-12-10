@@ -1,8 +1,8 @@
 package propra.imageconverter.image.compression.writer;
 
-import propra.imageconverter.binary.LittleEndianOutputStream;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 
 /**
@@ -17,6 +17,6 @@ public interface CompressionWriter {
      */
     long write(
             PixelIterator pixelData,
-            LittleEndianOutputStream outputStream
+            BufferedOutputStream outputStream
     ) throws IOException;
 }

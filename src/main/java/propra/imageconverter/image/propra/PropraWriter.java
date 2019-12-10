@@ -9,10 +9,12 @@ import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
 import propra.imageconverter.image.compression.writer.CompressionWriter;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 
 import static propra.imageconverter.image.propra.PropraFileFormat.MAGIC_HEADER;
+import static propra.imageconverter.util.RequireUtils.require;
 
 /**
  * Der PropraReader ermöglicht das Schreiben einer Propra-Datei
@@ -37,10 +39,14 @@ public final class PropraWriter implements ImageWriter {
             ImageReader imageReader,
             ReadWriteFile outputFile
     ) throws IOException {
+        require(compressionType == CompressionType.NO_COMPRESSION
+                || compressionType == CompressionType.RLE
+                || compressionType == CompressionType.HUFFMAN, "Die gewählte Kompressionsart wird für das ProPra-Format nicht unterstützt.");
+
         CompressionWriter compression
                 = compressionType.getCompressionWriter();
 
-        LittleEndianOutputStream outputStream = outputFile.outputStream(0);
+        LittleEndianOutputStream outputStream = new LittleEndianOutputStream(outputFile.outputStream(0));
 
         outputStream.writeFully(MAGIC_HEADER); // Formatkennung
         outputStream.writeUShort(imageReader.getWidth()); // Bildbreite
@@ -58,12 +64,15 @@ public final class PropraWriter implements ImageWriter {
         // Hier wird erst mal eine 0 geschrieben
         outputStream.writeUInt(0); // Prüfsumme über die Bytes des Datensegments (vorzeichenlos)
 
-        // Der FilePointer des darunterliegenden Ausgabestreams
-        // befindet sich nun am Beginn des Datensegments
+        // Wir befinden uns nun am Beginn des Datensegments
+        outputFile.releaseOutputStream();
+        BufferedOutputStream outputStreamData
+                = outputFile.outputStream(PropraFileFormat.OFFSET_DATA);
+
         PixelIterator pixelIterator =
                 PropraPixelIterator.forImageReader(imageReader);
 
-        long lengthOfContent = compression.write(pixelIterator, outputStream);
+        long lengthOfContent = compression.write(pixelIterator, outputStreamData);
 
         outputFile.releaseOutputStream();
 
@@ -73,14 +82,14 @@ public final class PropraWriter implements ImageWriter {
         // an den Anfang des Datensegments
         // Und dann berechnen wir die Prüfsumme der
         // geschriebenen Daten
-        LittleEndianInputStream inputStream = outputFile.inputStream(PropraFileFormat.OFFSET_DATA);
+        LittleEndianInputStream inputStream = new LittleEndianInputStream(outputFile.inputStream(PropraFileFormat.OFFSET_DATA));
         long checksum = Checksum.calcStreamingChecksum(lengthOfContent, inputStream::read);
         outputFile.releaseInputStream();
 
         // Wir setzen den Cursor des darunterliegenden Ausgabestreams
         // an die Position der Datensegmentlänge.
         // Wir schreiben die Datensegmentlänge und die Prüfsumme und schließen den Ausgabestream
-        outputStream = outputFile.outputStream(PropraFileFormat.OFFSET_DATA_SEGMENT_LENGTH);
+        outputStream = new LittleEndianOutputStream(outputFile.outputStream(PropraFileFormat.OFFSET_DATA_SEGMENT_LENGTH));
         outputStream.writeULong(BigInteger.valueOf(lengthOfContent));
         outputStream.writeUInt(checksum);
         outputFile.releaseOutputStream();

@@ -6,7 +6,15 @@ import propra.imageconverter.image.compression.reader.CompressionReader;
 import propra.imageconverter.image.compression.reader.NoCompressionReader;
 import propra.imageconverter.image.compression.reader.RLECompressionReader;
 
+import java.io.InputStream;
+
 final class TGAFileFormat {
+    /**
+     * Der Offset vom Beginn einer TGA-Datei
+     * bis zu dem Beginn des Datensegments
+     */
+    final static long OFFSET_DATA = 18;
+
     private TGAFileFormat() {
 
     }
@@ -15,12 +23,12 @@ final class TGAFileFormat {
      * Gibt für das Attribut {@param pictureType} einer TGA-Datei den
      * entsprechenden Reader für diesen Kompressionstyp zurück.
      */
-    static CompressionReader compressionReaderForPictureType(int pictureType) {
+    static CompressionReader compressionReaderForPictureType(InputStream inputStream, int pictureType) {
         switch (pictureType) {
             case 2:
-                return new NoCompressionReader();
+                return new NoCompressionReader(inputStream);
             case 10:
-                return new RLECompressionReader();
+                return new RLECompressionReader(inputStream);
         }
 
         throw new PropraException("Der ausgewählte Picture-Type (TGA) " + pictureType + " wird nicht unterstützt.");

@@ -1,7 +1,5 @@
 package propra.imageconverter.image.compression.reader;
 
-import propra.imageconverter.binary.LittleEndianInputStream;
-
 import java.io.IOException;
 
 /**
@@ -13,7 +11,5 @@ public interface CompressionReader {
      * Lese das nächste Pixel unter Beachtung des Kompressions-
      * algorithmus aus dem übergebenen {@param inputStream} aus.
      */
-    byte[] readNextPixel(
-            LittleEndianInputStream inputStream
-    ) throws IOException;
+    byte[] readNextPixel() throws IOException;
 }

@@ -2,10 +2,7 @@ package propra.imageconverter.binary;
 
 import propra.PropraException;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.channels.Channels;
 
 /**
@@ -22,116 +19,112 @@ import java.nio.channels.Channels;
  * RandomAccessFile im Modus ReadWrite geöffnet wurde.
  */
 public class ReadWriteFile implements AutoCloseable {
-	private final RandomAccessFile randomAccessFile;
+    private final RandomAccessFile randomAccessFile;
 
-	/**
-	 * Aktueller Ausgabestream, falls geöffnet, sonst null.
-	 */
-	private LittleEndianOutputStream lastOutputStream = null;
+    /**
+     * Aktueller Ausgabestream, falls geöffnet, sonst null.
+     */
+    private BufferedOutputStream lastOutputStream = null;
 
-	/**
-	 * Aktueller Eingabestream, falls geöffnet, sonst null.
-	 */
-	private LittleEndianInputStream lastInputStream = null;
+    /**
+     * Aktueller Eingabestream, falls geöffnet, sonst null.
+     */
+    private InputStream lastInputStream = null;
 
-	public ReadWriteFile(RandomAccessFile randomAccessFile) {
-		this.randomAccessFile = randomAccessFile;
-	}
+    public ReadWriteFile(RandomAccessFile randomAccessFile) {
+        this.randomAccessFile = randomAccessFile;
+    }
 
-	/**
-	 * Wirft eine Exception, fallls ein anderer Stream
-	 * für diese Datei bereits geöffnet ist.
-	 */
-	private void throwIfStreamOpened() {
-		if (lastInputStream != null || lastOutputStream != null)
-			throw new PropraException("Es kann zurzeit kein neuer Stream geöffnet werden, da bereits ein Stream für diese Datei geöffnet wurde.");
-	}
+    /**
+     * Wirft eine Exception, fallls ein anderer Stream
+     * für diese Datei bereits geöffnet ist.
+     */
+    private void throwIfStreamOpened() {
+        if (lastInputStream != null || lastOutputStream != null)
+            throw new PropraException("Es kann zurzeit kein neuer Stream geöffnet werden, da bereits ein Stream für diese Datei geöffnet wurde.");
+    }
 
-	/**
-	 * Gibt einen Eingabestream von der Position [filePosition] in der Datei zurück
-	 * <p>
-	 * Der Benutzer muss diesen Eingabestream mittels releaseInputStream
-	 * wieder freigeben. Der EingabeStream darf durch den Benutzer nicht
-	 * geschlossen werden.
-	 */
-	public LittleEndianInputStream inputStream(long filePosition) throws IOException {
-		throwIfStreamOpened();
+    /**
+     * Gibt einen Eingabestream von der Position [filePosition] in der Datei zurück
+     * <p>
+     * Der Benutzer muss diesen Eingabestream mittels releaseInputStream
+     * wieder freigeben. Der EingabeStream darf durch den Benutzer nicht
+     * geschlossen werden.
+     */
+    public InputStream inputStream(long filePosition) throws IOException {
+        throwIfStreamOpened();
 
-		// Zuerst an diese Stelle der Datei wechseln
-		randomAccessFile.seek(filePosition);
+        // Zuerst an diese Stelle der Datei wechseln
+        randomAccessFile.seek(filePosition);
 
-		// Dann öffnen wir den Eingabestream an dieser Position
-		lastInputStream = new LittleEndianInputStream(
-				new BufferedInputStream(
-						Channels.newInputStream(
-								randomAccessFile.getChannel()
-						)
-				)
-		);
+        // Dann öffnen wir den Eingabestream an dieser Position
+        lastInputStream = new BufferedInputStream(
+                Channels.newInputStream(
+                        randomAccessFile.getChannel()
+                )
+        );
 
-		return lastInputStream;
-	}
+        return lastInputStream;
+    }
 
-	/**
-	 * Gibt den Eingabestream wieder frei.
-	 */
-	public void releaseInputStream() {
-		lastInputStream = null;
+    /**
+     * Gibt den Eingabestream wieder frei.
+     */
+    public void releaseInputStream() {
+        lastInputStream = null;
 
-		// BufferedInputStream darf nicht geschlossen werden,
-		// da sonst der zugrundeliegende FileChannel geschlossen würde.
-	}
+        // BufferedInputStream darf nicht geschlossen werden,
+        // da sonst der zugrundeliegende FileChannel geschlossen würde.
+    }
 
-	/**
-	 * Gibt einen Ausgabestream von der Position [filePosition] in der Datei zurück
-	 * <p>
-	 * Der Benutzer muss diesen Eingabestream mittels releaseInputStream
-	 * wieder freigeben. Der Ausgabestream darf durch den Benutzer nicht
-	 * geschlossen werden.
-	 * <p>
-	 * Nur unterstützt, wenn die Datei für Schreiben geöffnet ist.
-	 */
-	public LittleEndianOutputStream outputStream(long filePosition) throws IOException {
-		throwIfStreamOpened();
+    /**
+     * Gibt einen Ausgabestream von der Position [filePosition] in der Datei zurück
+     * <p>
+     * Der Benutzer muss diesen Eingabestream mittels releaseInputStream
+     * wieder freigeben. Der Ausgabestream darf durch den Benutzer nicht
+     * geschlossen werden.
+     * <p>
+     * Nur unterstützt, wenn die Datei für Schreiben geöffnet ist.
+     */
+    public BufferedOutputStream outputStream(long filePosition) throws IOException {
+        throwIfStreamOpened();
 
-		// Zuerst an diese Stelle der Datei wechseln
-		randomAccessFile.seek(filePosition);
+        // Zuerst an diese Stelle der Datei wechseln
+        randomAccessFile.seek(filePosition);
 
-		// Dann öffnen wir den Ausgabestream an dieser Position
-		lastOutputStream = new LittleEndianOutputStream(
-				new BufferedOutputStream(
-						Channels.newOutputStream(
-								randomAccessFile.getChannel()
-						)
-				)
-		);
+        // Dann öffnen wir den Ausgabestream an dieser Position
+        lastOutputStream = new BufferedOutputStream(
+                Channels.newOutputStream(
+                        randomAccessFile.getChannel()
+                )
+        );
 
-		return lastOutputStream;
-	}
+        return lastOutputStream;
+    }
 
-	/**
-	 * Gibt den Ausgabestream wieder frei.
-	 */
-	public void releaseOutputStream() throws IOException {
-		// Noch nicht gespeicherte Daten des
-		// Ausgabestreams schreiben
-		lastOutputStream.flush();
-		lastOutputStream = null;
+    /**
+     * Gibt den Ausgabestream wieder frei.
+     */
+    public void releaseOutputStream() throws IOException {
+        // Noch nicht gespeicherte Daten des
+        // Ausgabestreams schreiben
+        lastOutputStream.flush();
+        lastOutputStream = null;
 
-		// Der Stream darf nicht geschlossen werden,
-		// da sonst der zugrundeliegende FileChannel geschlossen würde.
-	}
+        // Der Stream darf nicht geschlossen werden,
+        // da sonst der zugrundeliegende FileChannel geschlossen würde.
+    }
 
-	/**
-	 * Schließt die zugrundeliegende Datei.
-	 */
-	@Override
-	public void close() throws IOException {
-		// Noch nicht gespeicherte Daten des
-		// Ausgabestreams schreiben
-		if (lastOutputStream != null) {
-			lastOutputStream.flush();
-		}
-	}
+    /**
+     * Schließt die zugrundeliegende Datei.
+     */
+    @Override
+    public void close() throws IOException {
+        // Noch nicht gespeicherte Daten des
+        // Ausgabestreams schreiben
+        if (lastOutputStream != null) {
+            lastOutputStream.flush();
+        }
+    }
 
 }

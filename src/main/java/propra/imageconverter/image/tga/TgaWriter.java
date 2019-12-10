@@ -8,7 +8,10 @@ import propra.imageconverter.image.compression.CompressionType;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
 import propra.imageconverter.image.compression.writer.CompressionWriter;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+
+import static propra.imageconverter.util.RequireUtils.require;
 
 /**
  * Ermöglicht das Schreiben einer TGA-Datei.
@@ -33,7 +36,10 @@ public final class TgaWriter implements ImageWriter {
 			ImageReader imageReader,
 			ReadWriteFile outputFile
 	) throws IOException {
-		LittleEndianOutputStream outputStream = outputFile.outputStream(0);
+		require(compressionType == CompressionType.NO_COMPRESSION
+				|| compressionType == CompressionType.RLE, "Die gewählte Kompressionsart wird für das TGA-Format nicht unterstützt.");
+
+		LittleEndianOutputStream outputStream = new LittleEndianOutputStream(outputFile.outputStream(0));
 
 		CompressionWriter compressionWriter
 				= compressionType.getCompressionWriter();
@@ -52,7 +58,10 @@ public final class TgaWriter implements ImageWriter {
 		PixelIterator pixelIterator
 				= TGAPixelIterator.forImageReader(imageReader);
 
-		compressionWriter.write(pixelIterator, outputStream);
+		outputFile.releaseOutputStream();
+		BufferedOutputStream outputStreamData = outputFile.outputStream(TGAFileFormat.OFFSET_DATA);
+
+		compressionWriter.write(pixelIterator, outputStreamData);
 
 		outputFile.releaseOutputStream();
     }
