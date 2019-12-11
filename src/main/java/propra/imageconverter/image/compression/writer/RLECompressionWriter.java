@@ -186,8 +186,9 @@ public class RLECompressionWriter implements CompressionWriter {
                         break;
 
                     // Das aktuelle Byte wiederholt sich, daher muss es als Wiederholung
-                    // im nächsten Schleifendurchlauf verarbeitet werden.
-                    if (Arrays.equals(currentPixel, pixelData.peekPixel()))
+                    // im nächsten Schleifendurchlauf verarbeitet werden. Eine Ausnahme
+                    // es ist egal ob es sich in der nächsten Zeile wiederholt ;)
+                    if (Arrays.equals(currentPixel, pixelData.peekPixel()) && lineCounter != (pictureWidth - 1))
                         break;
 
                     System.arraycopy(currentPixel, 0, dataBuffer, currentDataBufferIndex * 3, 3);

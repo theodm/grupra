@@ -35,12 +35,56 @@ public final class BitOutputStream implements AutoCloseable {
      */
 
     public void writeBits(int numberOfBits, int value) throws IOException {
-        while (numberOfBits > 0) {
-            // TODO
-            writeBits8(numberOfBits, value % 8);
-            numberOfBits = numberOfBits - 8;
-            value = value >> 8;
+        // 0b01000_0000_0100_0000_0010_0000_0001_000
+
+        int first8Bits = (value >> 24) & 0b1111_1111;
+        int second8Bits = (value >> 16) & 0b1111_1111;
+        int third8Bits = (value >> 8) & 0b1111_1111;
+        int fourth8Bits = (value) & 0b1111_1111;
+
+        if (numberOfBits >= 24) {
+            writeBits8(numberOfBits % 24, first8Bits);
+            writeBits8(8, second8Bits);
+            writeBits8(8, third8Bits);
+            writeBits8(8, fourth8Bits);
+            return;
         }
+
+        if (numberOfBits >= 16) {
+            writeBits8(numberOfBits % 16, second8Bits);
+            writeBits8(8, third8Bits);
+            writeBits8(8, fourth8Bits);
+            return;
+        }
+
+        if (numberOfBits >= 8) {
+            writeBits8(numberOfBits % 8, third8Bits);
+            writeBits8(8, fourth8Bits);
+            return;
+        }
+
+        if (numberOfBits >= 0) {
+            writeBits8(numberOfBits, fourth8Bits);
+            return;
+        }
+
+        return;
+//        if (numberOfBits > 16)
+//            writeBits8(numberOfBits % 16, second8Bits);
+//
+//
+//        int offset = 8 - (numberOfBits % 8);
+//
+//        if (numberOfBits >= 24)
+//            writeBits8(8, (value >>> (24 - offset)) & 0b11111111);
+//
+//        if (numberOfBits >= 16)
+//            writeBits8(8, (value >>> (16 - offset)) & 0b11111111);
+//
+//        if (numberOfBits >= 8)
+//            writeBits8(8, (value >>> (8 - offset)) & 0b1111_1111);
+//
+//        writeBits8(numberOfBits % 8, value & 0b1111_1111);
     }
 
     private void writeBits8(int numberOfBits, int value) throws IOException {

@@ -54,12 +54,17 @@ class ImageConverterTest {
 //
 //                , new TestCase("[KE2V] [Erfolgsfall] Propra (rle) -> TGA -> Propra (rle): vorgegebener großer Testfall", "KE2_TestBilder_optional", "test_grosses_bild.propra", "test_grosses_bild.tga", "rle", "uncompressed")
 //                , new TestCase("[KE2V] [Erfolgsfall] Propra (rle) -> TGA (rle) -> Propra (rle): vorgegebener großer Testfall", "KE2_TestBilder_optional", "test_grosses_bild_copy.propra", "test_grosses_bild_copy.tga", "rle", "rle")
-//
-//                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (rle) -> TGA: vorgegebener Testfall 1", "KE3_TestBilder", "test_01_uncompressed.tga", "test_01_uncompressed_ke3.propra", "uncompressed", "rle")
+////
+//                 new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (rle) -> TGA: vorgegebener Testfall 1", "KE3_TestBilder", "test_01_uncompressed.tga", "test_01_uncompressed_ke3.propra", "uncompressed", "rle")
 //                , new TestCase("[KE3V] [Erfolgsfall] TGA (rle) -> Propra -> TGA (rle): vorgegebener Testfall 2", "KE3_TestBilder", "test_02_rle.tga", "test_02_rle_ke3.propra", "rle", "uncompressed")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra -> TGA (rle) -> Propra: vorgegebener Testfall 3", "KE3_TestBilder", "test_03_uncompressed.propra", "test_03_uncompressed_ke3.tga", "uncompressed", "rle")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra (rle) -> TGA -> Propra (rle): vorgegebener Testfall 4", "KE3_TestBilder", "test_04_rle.propra", "test_04_rle_ke3.tga", "rle", "uncompressed")
                 new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): vorgegebener Testfall 5", "KE3_TestBilder", "test_05_huffman.propra", "test_05_huffman.tga", "huffman", "rle")
+
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: vorgegebener Testfall 1", "KE3_TestBilder_ToHuffman", "test_01_uncompressed.tga", "test_01_uncompressed_ke3.propra", "uncompressed", "huffman")
+//                , new TestCase("[KE3V] [Erfolgsfall] TGA (rle) -> Propra (huffman) -> TGA (rle): vorgegebener Testfall 2", "KE3_TestBilder_ToHuffman", "test_02_rle.tga", "test_02_rle_ke3.propra", "rle", "huffman")
+//                , new TestCase("[KE3V] [Erfolgsfall] Propra -> Propra (huffman) -> Propra: vorgegebener Testfall 3", "KE3_TestBilder_ToHuffman", "test_03_uncompressed.propra", "test_03_uncompressed_ke3.propra", "uncompressed", "huffman")
+//                , new TestCase("[KE3V] [Erfolgsfall] Propra (rle) -> Propra (huffman) -> Propra (rle): vorgegebener Testfall 4", "KE3_TestBilder_ToHuffman", "test_04_rle.propra", "test_04_rle_ke3.propra", "rle", "huffman")
 
         );
     }

@@ -50,13 +50,28 @@ public class BitInputStream implements AutoCloseable {
         this.origin = origin;
     }
 
+    public int readBits(int numberOfBits) throws IOException {
+        return readBits8(numberOfBits);
+//        int result = 0;
+//
+//        while (numberOfBits > 8) {
+//            int bitsRead = readBits8(8);
+//            numberOfBits = numberOfBits - 8;
+//            result = (result | bitsRead) << 8;
+//        }
+//
+//        int bitsRead = readBits8(numberOfBits);
+//
+//        return result | bitsRead;
+    }
+
     /**
      * Liest die nächsten {@param numberOfBits} aus dem darunterliegenden
      * Eingabestream aus.
      *
      * Gibt -1 zurück, falls das Ende des Streams erreicht wurde.
      */
-    public int readBits(int numberOfBits) throws IOException {
+    private int readBits8(int numberOfBits) throws IOException {
         // Am Beginn des Streams ist das zuletzt gelesene Byte
         // noch nicht gesetzt; daher muss es hier initial gesetzt werden
         if (lastReadByte == null) {
