@@ -59,12 +59,33 @@ class ImageConverterTest {
 //                , new TestCase("[KE3V] [Erfolgsfall] TGA (rle) -> Propra -> TGA (rle): vorgegebener Testfall 2", "KE3_TestBilder", "test_02_rle.tga", "test_02_rle_ke3.propra", "rle", "uncompressed")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra -> TGA (rle) -> Propra: vorgegebener Testfall 3", "KE3_TestBilder", "test_03_uncompressed.propra", "test_03_uncompressed_ke3.tga", "uncompressed", "rle")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra (rle) -> TGA -> Propra (rle): vorgegebener Testfall 4", "KE3_TestBilder", "test_04_rle.propra", "test_04_rle_ke3.tga", "rle", "uncompressed")
-                new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): vorgegebener Testfall 5", "KE3_TestBilder", "test_05_huffman.propra", "test_05_huffman.tga", "huffman", "rle")
+//                new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): vorgegebener Testfall 5", "KE3_TestBilder", "test_05_huffman.propra", "test_05_huffman.tga", "huffman", "rle")
 
-                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: vorgegebener Testfall 1", "KE3_TestBilder_ToHuffman", "test_01_uncompressed.tga", "test_01_uncompressed_ke3.propra", "uncompressed", "huffman")
+                //         , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: vorgegebener Testfall 1", "KE3_TestBilder_ToHuffman", "test_01_uncompressed.tga", "test_01_uncompressed_ke3.propra", "uncompressed", "huffman")
+//                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Testfall Custom #1", "KE3_TestBilder_ToHuffman", "rle_2x2_zwei_eindeutige_zeilen.tga", "rle_2x2_zwei_eindeutige_zeilen.propra", "uncompressed", "huffman")
 //                , new TestCase("[KE3V] [Erfolgsfall] TGA (rle) -> Propra (huffman) -> TGA (rle): vorgegebener Testfall 2", "KE3_TestBilder_ToHuffman", "test_02_rle.tga", "test_02_rle_ke3.propra", "rle", "huffman")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra -> Propra (huffman) -> Propra: vorgegebener Testfall 3", "KE3_TestBilder_ToHuffman", "test_03_uncompressed.propra", "test_03_uncompressed_ke3.propra", "uncompressed", "huffman")
 //                , new TestCase("[KE3V] [Erfolgsfall] Propra (rle) -> Propra (huffman) -> Propra (rle): vorgegebener Testfall 4", "KE3_TestBilder_ToHuffman", "test_04_rle.propra", "test_04_rle_ke3.propra", "rle", "huffman")
+
+                new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 1", "KE3_Gabi", "test_01_huffman.propra", "test_01_huffman.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 2", "KE3_Gabi", "test_02_huffman.propra", "test_02_huffman.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 3", "KE3_Gabi", "test_03_huffman.propra", "test_03_huffman.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 4", "KE3_Gabi", "test_04_huffman.propra", "test_04_huffman.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 5a", "KE3_Gabi", "test_05_von_rle_huffman_GG.propra", "test_05_von_rle_huffman_GG.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 5b", "KE3_Gabi", "test_05_von_uncomp_huffman_GG.propra", "test_05_von_uncomp_huffman_GG.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 6", "KE3_Gabi", "test_06_Minibild_huffman.propra", "test_06_Minibild_huffman.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 7", "KE3_Gabi", "test_07_nur1Farbe_huffman.propra", "test_07_nur1Farbe_huffman.tga", "huffman", "rle")
+                , new TestCase("[KE3V] [Erfolgsfall] Propra (huffman) -> TGA (rle) -> Propra (huffman): Gabi 8", "KE3_Gabi", "test_08_grosses_bild_huffman.propra", "test_08_grosses_bild_huffman.tga", "huffman", "rle")
+
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 1 (Reverse)", "KE3_Gabi_Reverse", "test_01_uncompressed.tga", "test_01_uncompressed.propra", "uncompressed", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 2 (Reverse)", "KE3_Gabi_Reverse", "test_02_rle.tga", "test_02_rle.propra", "rle", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 3 (Reverse)", "KE3_Gabi_Reverse", "test_03_uncompressed.propra", "test_03_uncompressed_end.propra", "uncompressed", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 4 (Reverse)", "KE3_Gabi_Reverse", "test_04_rle.propra", "test_04_rle_end.propra", "rle", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 5a (Reverse)", "KE3_Gabi_Reverse", "test_05_rle.tga", "test_05_rle.propra", "rle", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 5b (Reverse)", "KE3_Gabi_Reverse", "test_05_uncompressed.tga", "test_05_uncompressed.propra", "uncompressed", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 6 (Reverse)", "KE3_Gabi_Reverse", "test_06_Minibild_uncompressed.tga", "test_06_Minibild_uncompressed.propra", "uncompressed", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 7 (Reverse)", "KE3_Gabi_Reverse", "test_07_nur1Farbe_uncompressed.tga", "test_07_nur1Farbe_uncompressed.propra", "uncompressed", "huffman")
+                , new TestCase("[KE3V] [Erfolgsfall] TGA -> Propra (huffman) -> TGA: Gabi 8 (Reverse)", "KE3_Gabi_Reverse", "allbytes.tga", "allbytes.propra", "uncompressed", "huffman")
 
         );
     }
@@ -182,7 +203,8 @@ class ImageConverterTest {
             this.outputCompression = outputCompression;
         }
 
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return "TestCase{" +
                     "displayName='" + displayName + '\'' +
                     ", resourcesFolder='" + resourcesFolder + '\'' +

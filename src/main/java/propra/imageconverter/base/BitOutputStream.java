@@ -1,5 +1,7 @@
 package propra.imageconverter.base;
 
+import propra.imageconverter.util.DebugUtils;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -37,6 +39,16 @@ public final class BitOutputStream implements AutoCloseable {
     public void writeBits(int numberOfBits, int value) throws IOException {
         // 0b01000_0000_0100_0000_0010_0000_0001_000
 
+        String binary = Integer.toBinaryString(value);
+
+        if (numberOfBits - binary.length() < 0)
+            DebugUtils.log(() -> "[BitOutputStream] Error: Number of Bits " + numberOfBits + " (" + binary + ")");
+        else if (numberOfBits > 8)
+            DebugUtils.log(() -> {
+
+                return "[BitOutputStream] Written " + numberOfBits + " Bits : " + "0".repeat(numberOfBits - binary.length()) + binary;
+            });
+
         int first8Bits = (value >> 24) & 0b1111_1111;
         int second8Bits = (value >> 16) & 0b1111_1111;
         int third8Bits = (value >> 8) & 0b1111_1111;
@@ -63,7 +75,7 @@ public final class BitOutputStream implements AutoCloseable {
             return;
         }
 
-        if (numberOfBits >= 0) {
+        if (numberOfBits > 0) {
             writeBits8(numberOfBits, fourth8Bits);
             return;
         }

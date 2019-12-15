@@ -2,8 +2,6 @@ package propra.imageconverter.image.compression.writer;
 
 import propra.imageconverter.binary.LittleEndianOutputStream;
 import propra.imageconverter.image.compression.iterator.PixelIterator;
-import propra.imageconverter.util.ArrayUtils;
-import propra.imageconverter.util.DebugUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -35,7 +33,7 @@ public class RLECompressionWriter implements CompressionWriter {
 			byte[] dataBuffer,
 			int currentDataBufferIndex
 	) throws IOException {
-		DebugUtils.log(() -> "Buffer (Daten) werden geschrieben. (" + currentDataBufferIndex + " Bildpunkt(e))");
+//		DebugUtils.log(() -> "Buffer (Daten) werden geschrieben. (" + currentDataBufferIndex + " Bildpunkt(e))");
 
 		// Der Buffer wurde tatsächlich nur
 		// soweit geschrieben.
@@ -49,8 +47,8 @@ public class RLECompressionWriter implements CompressionWriter {
 		outputStream.writeUByte(controlByte);
 		outputStream.writeFully(bytesToWrite);
 
-		DebugUtils.log(() -> String.format("Written: %02X", controlByte));
-		DebugUtils.log(() -> "Written: " + ArrayUtils.debugFormat(bytesToWrite));
+//		DebugUtils.log(() -> String.format("Written: %02X", controlByte));
+//		DebugUtils.log(() -> "Written: " + ArrayUtils.debugFormat(bytesToWrite));
 
 		// Im Debug-Mode überschreiben wir
 		// den Buffer für das Debuggen mit 0en,
@@ -78,7 +76,7 @@ public class RLECompressionWriter implements CompressionWriter {
 			byte[] repeatingPixel,
 			int repeats
 	) throws IOException {
-		DebugUtils.log(() -> "Buffer (wiederholte Bildpunkte) werden geschrieben. (" + repeats + " x " + ArrayUtils.formatRGBPixelOrNull(repeatingPixel) + ")");
+//		DebugUtils.log(() -> "Buffer (wiederholte Bildpunkte) werden geschrieben. (" + repeats + " x " + ArrayUtils.formatRGBPixelOrNull(repeatingPixel) + ")");
 
 		// Steuerbyte enthält die Länge des Wiederholungszähler - 1
 		// das 8. Bit ist 1, was mittels Bit-Operationen bewerkstelligt wird.
@@ -87,8 +85,8 @@ public class RLECompressionWriter implements CompressionWriter {
 		outputStream.writeUByte(controlByte);
 		outputStream.writeFully(repeatingPixel);
 
-		DebugUtils.log(() -> String.format("Written: %02X", controlByte));
-		DebugUtils.log(() -> "Written: " + ArrayUtils.debugFormat(repeatingPixel));
+//		DebugUtils.log(() -> String.format("Written: %02X", controlByte));
+//		DebugUtils.log(() -> "Written: " + ArrayUtils.debugFormat(repeatingPixel));
 
 		return 1 + repeatingPixel.length;
 	}

@@ -1,11 +1,14 @@
 package propra.imageconverter.image.compression.reader.huffman;
 
+import propra.PropraException;
 import propra.imageconverter.base.BitInputStream;
 import propra.imageconverter.base.BitOutputStream;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static propra.imageconverter.util.RequireUtils.require;
 
 public class HuffmanTree {
 
@@ -38,6 +41,23 @@ public class HuffmanTree {
     public static Node constructForOccurenceMap(
             Map<Byte, Integer> occurenceMap
     ) {
+        require(occurenceMap.size() > 0, "Es muss für die Erstellung eines Huffman-Baums mindestens ein Byte in den Daten vorhanden sein.");
+
+        if (occurenceMap.size() == 1) {
+            byte onlyByte = occurenceMap
+                    .keySet()
+                    .stream()
+                    .findFirst()
+                    // Kann nicht passieren, da es zwingend genau ein Element gibt.
+                    // (Das gilt zumindest solange kein Multihreading ins Spiel kommt)
+                    .orElseThrow(() -> new PropraException("Es ist eine Race-Condition aufgetreten. Bitte kontaktieren Sie einen Entwickler."));
+
+            // Wir nutzen hier absichtlich den Overflow-Mechanismus
+            // so vermeiden wir immer, dass wir ein Byte hinzufügen,
+            // welches wir noch nicht verwendet haben
+            occurenceMap.put((byte) (onlyByte + 1), 0);
+        }
+
         List<Node> nodes = occurenceMap
                 .entrySet()
                 .stream()
@@ -75,7 +95,16 @@ public class HuffmanTree {
         boolean isFirstInner = inputStream.readBits(1) == 0;
 
         if (!isFirstInner) {
-            return new Leaf(null, inputStream.readBits(8));
+            // Wir arbeiten hier nach dem Robustheitsgrundsatz
+            // "be conservative in what you do, be liberal in what you accept from others"
+            System.out.println("Es wurde eine komprimierte Datei " +
+                    "mit der Huffman-Komprimierung eingelesen, " +
+                    "deren Baum nur aus einem Blatt besteht. " +
+                    "Nach der Spezifikation wird eine solche Datei nicht " +
+                    "unterstützt. Es wird abweichend von der Spezifikation " +
+                    "versucht die Datei einzulesen.");
+
+            return new Leaf(null, (byte) inputStream.readBits(8));
         }
 
         HuffmanTree.InnerNode rootNode = new InnerNode(null);
@@ -91,7 +120,7 @@ public class HuffmanTree {
             if (isInner) {
                 nodeToInsert = new HuffmanTree.InnerNode(currentNode);
             } else {
-                nodeToInsert = new HuffmanTree.Leaf(currentNode, inputStream.readBits(8));
+                nodeToInsert = new HuffmanTree.Leaf(currentNode, (byte) inputStream.readBits(8));
             }
 
             if (currentNode.getLeft() == null) {
@@ -244,17 +273,17 @@ public class HuffmanTree {
     }
 
     public static class Leaf implements Node {
-        private final int data;
+        private final byte data;
         private final int numberOfOccurences;
         private InnerNode parent;
 
-        public Leaf(InnerNode parent, int data) {
+        public Leaf(InnerNode parent, byte data) {
             this.parent = parent;
             this.data = data;
             this.numberOfOccurences = -1;
         }
 
-        public Leaf(InnerNode parent, int data, int numberOfOccurences) {
+        public Leaf(InnerNode parent, byte data, int numberOfOccurences) {
             this.parent = parent;
             this.data = data;
             this.numberOfOccurences = numberOfOccurences;
@@ -278,7 +307,7 @@ public class HuffmanTree {
         @Override
         public long writeTree(BitOutputStream outputStream) throws IOException {
             outputStream.writeBits(1, 1);
-            outputStream.writeBits(8, data);
+            outputStream.writeBits(8, Byte.toUnsignedInt(data));
 
             return 9;
         }

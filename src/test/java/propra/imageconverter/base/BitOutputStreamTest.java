@@ -85,7 +85,7 @@ class BitOutputStreamTest {
     @DisplayName("Schreiben von 1-32 Bits")
     public void testBits() throws IOException {
 
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i <= 32; i++) {
             ByteArrayOutputStream bosOutput
                     = new ByteArrayOutputStream();
             BitOutputStream bos
@@ -104,7 +104,7 @@ class BitOutputStreamTest {
     @DisplayName("Schreiben von 9 Bits")
     public void testBits9() throws IOException {
         byte[] expectedData = {
-                (byte) 0b1111_1111,
+                (byte) 0b1011_1111,
                 (byte) 0b1000_0000
         };
 
@@ -113,7 +113,7 @@ class BitOutputStreamTest {
         BitOutputStream bos
                 = new BitOutputStream(bosOutput);
 
-        bos.writeBits(9, 0b1_1111_1111);
+        bos.writeBits(9, 0b1_0111_1111);
         bos.writeBits(7, 0);
 
         assertArrayEquals(expectedData, bosOutput.toByteArray());
