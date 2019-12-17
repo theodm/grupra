@@ -16,7 +16,7 @@ import java.nio.file.Path;
 
 import static propra.imageconverter.util.PathUtils.calcFileExtension;
 
-public final class Converter {
+final class Converter {
     private Converter() {
 
     }
@@ -52,9 +52,9 @@ public final class Converter {
 
         switch (extension) {
             case "tga":
-                return TgaWriter.create(compressionType);
+                return new TgaWriter(compressionType);
             case "propra":
-                return PropraWriter.create(compressionType);
+                return new PropraWriter(compressionType);
         }
 
         throw new PropraException("Das Format mit der Dateiendung " + extension + " wird nicht unterstützt.");
@@ -73,7 +73,7 @@ public final class Converter {
         // Öffnet die Eingabedatei zum Lesen.
         // Wird implizit durch das Schließen des ImageReader geschlossen.
         ReadWriteFile inputReadWriteFile =
-                new ReadWriteFile(
+                ReadWriteFile.createReadWriteFile(
                         new RandomAccessFile(
                                 inputFilePath.toFile(), "r"
                         )
@@ -85,7 +85,7 @@ public final class Converter {
         )) {
             // Öffnet die Ausgabedatei zum Lesen und zum Schreiben
             // Wird implizit durch das Schließen des ImageWriter geschlossen.
-            ReadWriteFile outputReadWriteFile = new ReadWriteFile(
+            ReadWriteFile outputReadWriteFile = ReadWriteFile.overwriteReadWriteFile(
                     new RandomAccessFile(
                             outputFilePath.toFile(), "rw"
                     )

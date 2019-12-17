@@ -9,22 +9,22 @@ import java.io.IOException;
  * die Vorausschau auf den nächsten Bildpunkt.
  */
 public abstract class PeekAndConvertPixelIterator implements PixelIterator {
-	private final ImageReader imageReader;
+    private final ImageReader imageReader;
 
     /**
      * Vorgespeicherter Bildpunkt, um das Peeken auf den nächsten Bildpunkt zu ermöglichen.
      */
     private byte[] nextPixel;
 
-    @Override
-    public final void reset() throws IOException {
-        imageReader.reset();
+    protected PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
+        this.imageReader = imageReader;
 
         this.nextPixel = convertPixel(imageReader.readNextPixel());
     }
 
-    protected PeekAndConvertPixelIterator(ImageReader imageReader) throws IOException {
-        this.imageReader = imageReader;
+    @Override
+    public final void reset() throws IOException {
+        imageReader.reset();
 
         this.nextPixel = convertPixel(imageReader.readNextPixel());
     }
@@ -35,22 +35,25 @@ public abstract class PeekAndConvertPixelIterator implements PixelIterator {
      */
     protected abstract byte[] convertPixel(byte[] inputPixel);
 
-	@Override public final byte[] readNextPixel() throws IOException {
-		byte[] currentPixel = nextPixel;
+    @Override
+    public final byte[] readNextPixel() throws IOException {
+        byte[] currentPixel = nextPixel;
 
-		if (imageReader.hasNextPixel())
-			nextPixel = convertPixel(imageReader.readNextPixel());
-		else
-			nextPixel = null;
+        if (imageReader.hasNextPixel())
+            nextPixel = convertPixel(imageReader.readNextPixel());
+        else
+            nextPixel = null;
 
-		return currentPixel;
-	}
+        return currentPixel;
+    }
 
-	@Override public final byte[] peekPixel() {
-		return nextPixel;
-	}
+    @Override
+    public final byte[] peekPixel() {
+        return nextPixel;
+    }
 
-    @Override public final boolean hasNextPixel() {
+    @Override
+    public final boolean hasNextPixel() {
         return nextPixel != null;
     }
 

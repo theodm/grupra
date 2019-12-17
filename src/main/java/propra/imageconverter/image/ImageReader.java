@@ -31,5 +31,9 @@ public interface ImageReader extends AutoCloseable {
      */
     boolean hasNextPixel();
 
+    /**
+     * Setzt den Bilddatenstrom auf den Anfang der
+     * Bilddaten zurück.
+     */
     void reset() throws IOException;
 }

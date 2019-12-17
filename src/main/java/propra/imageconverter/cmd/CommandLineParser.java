@@ -35,6 +35,9 @@ public final class CommandLineParser {
             };
         }
 
+        // Hier wird absichtlich nicht split verwendet:
+        // Enthält der Parameterwert selbst ein =, dann würde
+        // split fehlerhafterweise ein weiteres Arrayelement daraus machen.
         String paramName = arg.substring(0, arg.indexOf('='));
         String paramValue = arg.substring(arg.indexOf('=') + 1);
 

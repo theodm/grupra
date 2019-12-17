@@ -13,7 +13,7 @@ public final class PropraPixelIterator extends PeekAndConvertPixelIterator {
 		super(imageReader);
 	}
 
-	public static PixelIterator forImageReader(ImageReader imageReader) throws IOException {
+	static PixelIterator forImageReader(ImageReader imageReader) throws IOException {
 		return new PropraPixelIterator(imageReader);
 	}
 

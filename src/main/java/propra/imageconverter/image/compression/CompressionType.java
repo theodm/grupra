@@ -1,10 +1,15 @@
 package propra.imageconverter.image.compression;
 
 import propra.PropraException;
-import propra.imageconverter.image.compression.reader.huffman.HuffmanCompressionWriter;
-import propra.imageconverter.image.compression.writer.CompressionWriter;
-import propra.imageconverter.image.compression.writer.NoCompressionWriter;
-import propra.imageconverter.image.compression.writer.RLECompressionWriter;
+import propra.imageconverter.image.compression.huffman.HuffmanCompressionWriter;
+import propra.imageconverter.image.compression.iterator.PixelIterator;
+import propra.imageconverter.image.compression.rle.RLECompressionWriter;
+import propra.imageconverter.image.compression.selector.CompressionSelector;
+import propra.imageconverter.image.compression.uncompressed.NoCompressionWriter;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Gibt die möglichen Kompressionstypen an.
@@ -12,7 +17,8 @@ import propra.imageconverter.image.compression.writer.RLECompressionWriter;
 public enum CompressionType {
 	NO_COMPRESSION,
     RLE,
-    HUFFMAN;
+	HUFFMAN,
+	AUTO;
 
 	/**
 	 * Wandelt ein übergebenes Kommandozeilenargument in
@@ -26,6 +32,8 @@ public enum CompressionType {
 				return RLE;
             case "huffman":
                 return HUFFMAN;
+			case "auto":
+				return AUTO;
 		}
 
 		// Kann nicht vorkommen!
@@ -35,6 +43,11 @@ public enum CompressionType {
 	/**
 	 * Gibt den entsprechenden CompressionWriter
 	 * für den aktuellen Aufzählungswert zurück.
+	 * <p>
+	 * Ist der Kompressionstyp AUTO kann kein eindeutiger
+	 * CompressionWriter ausgewählt werden, ohne das die Bilddaten
+	 * analysiert werden. Dafür muss die Methode getCompressionWriterWithAuto
+	 * verwendet werden.
 	 */
 	public CompressionWriter getCompressionWriter() {
 		switch (this) {
@@ -44,9 +57,38 @@ public enum CompressionType {
 				return new RLECompressionWriter();
             case HUFFMAN:
                 return new HuffmanCompressionWriter();
+			case AUTO:
+				throw new PropraException("Zu dem Kompressionstyp AUTO gibt es keinen allgemeingültigen CompressionWriter. "
+						+ "Bitte die Methode getCompressionWriterAuto zur Auflösung verwenden.");
 		}
 
 		// Kann nicht vorkommen!
 		throw new PropraException("Der Kompressionstyp " + this + " wird nicht unterstützt.");
+	}
+
+	/**
+	 * Gibt den entsprechenden CompressionWriter
+	 * für den aktuellen Aufzählungswert zurück.
+	 * <p>
+	 * Für den Kompressionstyp AUTO wird der optimale Kompressionsalgorithmus
+	 * automatisch anhand der übergebenen Bilddaten und unterstützten Kompressionstypen
+	 * gewählt.
+	 */
+	public CompressionWriter getCompressionWriterWithAuto(
+			List<CompressionType> supportedCompressions,
+			PixelIterator pixelIterator
+	) throws IOException {
+		if (this != AUTO)
+			return getCompressionWriter();
+
+		List<CompressionType> supportedCompressionsWithoutAuto
+				= supportedCompressions
+				.stream()
+				.filter(it -> it != CompressionType.AUTO)
+				.collect(Collectors.toList());
+
+		return CompressionSelector
+				.findOptimalCompression(supportedCompressionsWithoutAuto, pixelIterator)
+				.getCompressionWriter();
 	}
 }

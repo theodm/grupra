@@ -32,7 +32,12 @@ public interface PixelIterator {
 	 */
 	boolean hasNextPixel();
 
-    void reset() throws IOException;
+	/**
+	 * Wir setzen den PixelIterator
+	 * auf den Anfang der Bilddaten zurück, um
+	 * die Daten erneut lesen zu können.
+	 */
+	void reset() throws IOException;
 
 	/**
 	 * Gibt die Breite des zugrund veliegenden

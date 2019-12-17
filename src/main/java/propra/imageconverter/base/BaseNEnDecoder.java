@@ -1,11 +1,13 @@
 package propra.imageconverter.base;
 
 import propra.PropraException;
+import propra.imageconverter.util.ListUtils;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,6 +55,10 @@ public final class BaseNEnDecoder {
                     .collect(Collectors.joining(", "));
 
             throw new PropraException("Das Alphabet " + alphabet + " wird nicht unterstützt. Die Länge ist " + alphabet.length() + ". Unterstützt werden nur die Längen " + supportedBases + ".");
+        }
+
+        if (ListUtils.containsDuplicates(Collections.singletonList(alphabet.toCharArray()))) {
+            throw new PropraException("Das Alphabet" + alphabet + " enthält Duplikate und kann daher nicht verarbeitet werden.");
         }
     }
 

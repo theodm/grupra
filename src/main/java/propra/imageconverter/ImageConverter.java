@@ -27,7 +27,7 @@ public final class ImageConverter {
      * @param optionalArgs Die optionalen Argumente für diese Aktion.
      * @param parsedArgs   Alle geparsten Argumente.
      */
-    public static void neededCheck(
+    private static void neededCheck(
             String action,
             Set<String> neededArgs,
             Set<String> optionalArgs,
@@ -54,7 +54,7 @@ public final class ImageConverter {
      * Convenience für den neededCheck ohne
      * optionale Argumente.
      */
-    public static void neededCheck(
+    private static void neededCheck(
             String action,
             Set<String> neededArgs,
             Map<String, String> parsedArgs
@@ -69,7 +69,7 @@ public final class ImageConverter {
      * Hat der Dateipfad diese Dateiendung nicht, wird
      * eine Exception geworfen.
      */
-    public static Path removeExtensionIfThere(
+    private static Path removeExtensionIfThere(
             Path file,
             String removeExtension
     ) {
@@ -86,7 +86,7 @@ public final class ImageConverter {
      * Gibt zu einem Dateipfad, den Dateipfad zurück,
      * der entsteht, wenn man die Dateiendung {@param newExtension} hinzufügt.
      */
-    public static Path appendExtension(
+    private static Path appendExtension(
             Path file,
             String newExtension
     ) {

@@ -3,6 +3,10 @@ package propra.imageconverter.image.compression.reader.huffman;
 import org.junit.jupiter.api.Test;
 import propra.imageconverter.base.BitInputStream;
 import propra.imageconverter.base.BitOutputStream;
+import propra.imageconverter.image.compression.huffman.tree.HuffmanTree;
+import propra.imageconverter.image.compression.huffman.tree.InnerNode;
+import propra.imageconverter.image.compression.huffman.tree.Leaf;
+import propra.imageconverter.image.compression.huffman.tree.Node;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,16 +20,16 @@ import java.util.stream.Stream;
 
 class HuffmanTreeTest {
 
-    public void debugPrint(HuffmanTree.Node node, StringBuilder stringBuilder, String prefix, String childrenPrefix) {
+    public void debugPrint(Node node, StringBuilder stringBuilder, String prefix, String childrenPrefix) {
         stringBuilder.append(prefix);
-        if (node instanceof HuffmanTree.Leaf)
-            stringBuilder.append(((HuffmanTree.Leaf) node).getData());
+        if (node instanceof Leaf)
+            stringBuilder.append(((Leaf) node).getData());
         stringBuilder.append('\n');
 
-        if (node instanceof HuffmanTree.InnerNode) {
-            if (((HuffmanTree.InnerNode) node).getLeft() != null) {
+        if (node instanceof InnerNode) {
+            if (((InnerNode) node).getLeft() != null) {
                 debugPrint(
-                        ((HuffmanTree.InnerNode) node).getLeft(),
+                        ((InnerNode) node).getLeft(),
                         stringBuilder,
                         childrenPrefix + "├── (l) ",
                         childrenPrefix + "│   "
@@ -33,10 +37,10 @@ class HuffmanTreeTest {
             }
         }
 
-        if (node instanceof HuffmanTree.InnerNode) {
-            if (((HuffmanTree.InnerNode) node).getRight() != null) {
+        if (node instanceof InnerNode) {
+            if (((InnerNode) node).getRight() != null) {
                 debugPrint(
-                        ((HuffmanTree.InnerNode) node).getRight(),
+                        ((InnerNode) node).getRight(),
                         stringBuilder,
                         childrenPrefix + "├── (r) ",
                         childrenPrefix + "│   "
@@ -46,13 +50,29 @@ class HuffmanTreeTest {
 
     }
 
-    public void debugPrint(HuffmanTree.Node node) {
+    public void debugPrint(Node node) {
         StringBuilder stringBuilder
                 = new StringBuilder();
 
         debugPrint(node, stringBuilder, "", "");
 
         System.out.println(stringBuilder.toString());
+    }
+
+    @Test
+    public void minimalExample() throws IOException {
+        byte[] data = {
+                (byte) 0x40,
+                (byte) 0x3F,
+                (byte) 0xFF
+        };
+
+        BitInputStream bis
+                = new BitInputStream(new ByteArrayInputStream(data));
+
+        Node result = HuffmanTree.constructFromStream(bis);
+
+        debugPrint(result);
     }
 
     @Test
@@ -68,7 +88,7 @@ class HuffmanTreeTest {
         BitInputStream bis
                 = new BitInputStream(new ByteArrayInputStream(data));
 
-        HuffmanTree.Node result = HuffmanTree.constructFromStream(bis);
+        Node result = HuffmanTree.constructFromStream(bis);
 
         debugPrint(result);
     }
@@ -105,7 +125,7 @@ class HuffmanTreeTest {
         BitInputStream bis
                 = new BitInputStream(new ByteArrayInputStream(data));
 
-        HuffmanTree.Node result = HuffmanTree.constructFromStream(bis);
+        Node result = HuffmanTree.constructFromStream(bis);
 
         debugPrint(result);
 
@@ -130,7 +150,7 @@ class HuffmanTreeTest {
                 new HashMap.SimpleEntry<>((byte) 7, 50)
         ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
 
-        HuffmanTree.Node result = HuffmanTree.constructForOccurenceMap(map);
+        Node result = HuffmanTree.constructForOccurenceMap(map);
 
         debugPrint(result);
 
@@ -150,7 +170,7 @@ class HuffmanTreeTest {
         BitInputStream bis
                 = new BitInputStream(new ByteArrayInputStream(bosOutput.toByteArray()));
 
-        HuffmanTree.Node result2 = HuffmanTree.constructFromStream(bis);
+        Node result2 = HuffmanTree.constructFromStream(bis);
 
         debugPrint(result2);
     }

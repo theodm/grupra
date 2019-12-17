@@ -1,6 +1,6 @@
 package propra.imageconverter.base;
 
-import propra.imageconverter.util.DebugUtils;
+import propra.PropraException;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,9 +18,6 @@ public final class BitOutputStream implements AutoCloseable {
      */
     private int currentByte = 0;
 
-    private int counter = 0;
-    private int counterBytes = 0;
-
     /**
      * Der aktuelle Bit-Index innerhalb des geschriebenen Bytes. Bis dahin sind
      * die Bits innerhalb dieses Bytes bereits geschrieben.
@@ -32,23 +29,14 @@ public final class BitOutputStream implements AutoCloseable {
     }
 
     /**
-     * Schreibt die nächsten {@param numberOfBits} in den darunterliegenden Ausgabestream mit dem übergebenen
-     * Wert {@param value}.
+     * Schreibt die nächsten {@param numberOfBits} Bits in den darunterliegenden Ausgabestream mit dem übergebenen
+     * Wert {@param value}. Unterstützt zwischen 0 und 32 Bits.
      */
-
     public void writeBits(int numberOfBits, int value) throws IOException {
-        // 0b01000_0000_0100_0000_0010_0000_0001_000
-
-        String binary = Integer.toBinaryString(value);
-
-        if (numberOfBits - binary.length() < 0)
-            DebugUtils.log(() -> "[BitOutputStream] Error: Number of Bits " + numberOfBits + " (" + binary + ")");
-        else if (numberOfBits > 8)
-            DebugUtils.log(() -> {
-
-                return "[BitOutputStream] Written " + numberOfBits + " Bits : " + "0".repeat(numberOfBits - binary.length()) + binary;
-            });
-
+        // 32bit-Unterstützung wird hier einfach dadurch
+        // gewährleistet, dass die darunterliegende Methode writeBits8,
+        // welche lediglich maximal 8 Bits schreiben kann,
+        // mehrmals aufgerufen wird.
         int first8Bits = (value >> 24) & 0b1111_1111;
         int second8Bits = (value >> 16) & 0b1111_1111;
         int third8Bits = (value >> 8) & 0b1111_1111;
@@ -77,30 +65,21 @@ public final class BitOutputStream implements AutoCloseable {
 
         if (numberOfBits > 0) {
             writeBits8(numberOfBits, fourth8Bits);
-            return;
         }
-
-        return;
-//        if (numberOfBits > 16)
-//            writeBits8(numberOfBits % 16, second8Bits);
-//
-//
-//        int offset = 8 - (numberOfBits % 8);
-//
-//        if (numberOfBits >= 24)
-//            writeBits8(8, (value >>> (24 - offset)) & 0b11111111);
-//
-//        if (numberOfBits >= 16)
-//            writeBits8(8, (value >>> (16 - offset)) & 0b11111111);
-//
-//        if (numberOfBits >= 8)
-//            writeBits8(8, (value >>> (8 - offset)) & 0b1111_1111);
-//
-//        writeBits8(numberOfBits % 8, value & 0b1111_1111);
     }
 
+    /**
+     * Schreibt die nächsten {@param numberOfBits} Bits in den darunterliegenden Ausgabestream mit dem übergebenen
+     * Wert {@param value}. Unterstützt zwischen 0 und 8 Bits.
+     */
     private void writeBits8(int numberOfBits, int value) throws IOException {
-        counter += numberOfBits;
+        if (numberOfBits < 0 || numberOfBits > 8) {
+            // Zurzeit wird die Unterstützung von > 8 Bits nicht gebraucht;
+            // lediglich das Schreiben von mehr als 8 Bits, daher wird der
+            // BitInputStream wegen YAGNI nicht erweitert.
+            throw new PropraException("BitInputStream#numberOfBits8 kann maximal 8 Bits auf einmal schreiben. (Tatsächlich wurden " + numberOfBits + " angefragt)");
+        }
+
         int leftByte = currentByte;
         // Wir schauen uns das ganze wieder in
         // einer 16-bittigen Zahl an
@@ -120,7 +99,6 @@ public final class BitOutputStream implements AutoCloseable {
             // daher schreiben wir das aktuelle Byte
             currentBitOffset = (currentBitOffset + numberOfBits) % 8;
             origin.write(leftByte);
-            counterBytes++;
 
             // und das neue Byte wird das aktuelle Byte für den nächsten
             // Durchlauf

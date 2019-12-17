@@ -1,12 +1,14 @@
 package propra.imageconverter.image.tga;
 
 import propra.PropraException;
+import propra.imageconverter.image.compression.CompressionReader;
 import propra.imageconverter.image.compression.CompressionType;
-import propra.imageconverter.image.compression.reader.CompressionReader;
-import propra.imageconverter.image.compression.reader.NoCompressionReader;
-import propra.imageconverter.image.compression.reader.RLECompressionReader;
+import propra.imageconverter.image.compression.rle.RLECompressionReader;
+import propra.imageconverter.image.compression.uncompressed.NoCompressionReader;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 final class TGAFileFormat {
     /**
@@ -14,6 +16,12 @@ final class TGAFileFormat {
      * bis zu dem Beginn des Datensegments
      */
     final static long OFFSET_DATA = 18;
+
+    final static List<CompressionType> supportedCompressionTypes = Arrays.asList(
+            CompressionType.NO_COMPRESSION,
+            CompressionType.RLE,
+            CompressionType.AUTO
+    );
 
     private TGAFileFormat() {
 

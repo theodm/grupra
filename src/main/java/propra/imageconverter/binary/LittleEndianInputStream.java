@@ -22,6 +22,11 @@ public class LittleEndianInputStream implements AutoCloseable {
         this.inputStream = inputStream;
     }
 
+    /**
+     * Liest ein vorzeichenloses Byte aus dem darunterliegenden Eingabestream aus.
+     * <p>
+     * Gibt -1 zurück, falls das Ende des Streams erreicht wurde.
+     */
     public int read() throws IOException {
         return inputStream.read();
     }
@@ -114,7 +119,7 @@ public class LittleEndianInputStream implements AutoCloseable {
         int bytesRead = inputStream.read(targetArray);
 
         if (bytesRead != targetArray.length) {
-			throw new PropraException("Das Dateiende wurde vorzeitig erreicht.");
+            throw new PropraException("Das Dateiende wurde vorzeitig erreicht.");
         }
     }
 

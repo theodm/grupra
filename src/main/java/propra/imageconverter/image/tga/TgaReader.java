@@ -3,7 +3,7 @@ package propra.imageconverter.image.tga;
 import propra.imageconverter.binary.LittleEndianInputStream;
 import propra.imageconverter.binary.ReadWriteFile;
 import propra.imageconverter.image.ImageReader;
-import propra.imageconverter.image.compression.reader.CompressionReader;
+import propra.imageconverter.image.compression.CompressionReader;
 import propra.imageconverter.util.ArrayUtils;
 
 import java.io.IOException;

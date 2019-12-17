@@ -18,7 +18,7 @@ import java.nio.channels.Channels;
  * Ein Ausgabestream kann nur geöffnet werden, wenn das zugrundeliegende
  * RandomAccessFile im Modus ReadWrite geöffnet wurde.
  */
-public class ReadWriteFile implements AutoCloseable {
+public final class ReadWriteFile implements AutoCloseable {
     private final RandomAccessFile randomAccessFile;
 
     /**
@@ -31,8 +31,25 @@ public class ReadWriteFile implements AutoCloseable {
      */
     private InputStream lastInputStream = null;
 
-    public ReadWriteFile(RandomAccessFile randomAccessFile) {
+    private ReadWriteFile(RandomAccessFile randomAccessFile) {
         this.randomAccessFile = randomAccessFile;
+    }
+
+    /**
+     * Erstellt eine Instanz von ReadWriteFile.
+     */
+    public static ReadWriteFile createReadWriteFile(RandomAccessFile randomAccessFile) {
+        return new ReadWriteFile(randomAccessFile);
+    }
+
+    /**
+     * Erstellt eine Instanz von ReadWriteFile, bei der sichergestellt wird,
+     * dass die Inhalte der Datei zuvor gelöscht werden.
+     */
+    public static ReadWriteFile overwriteReadWriteFile(RandomAccessFile randomAccessFile) throws IOException {
+        randomAccessFile.setLength(0);
+
+        return new ReadWriteFile(randomAccessFile);
     }
 
     /**
